@@ -3,8 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "display.h"
+#include "game/game_feature.h"
 
 int main(void) {
+    srand(time(NULL));
     // Grille de test (4x4)
     uint32_t grid[16] = {
         2,    4,    8,    16,
