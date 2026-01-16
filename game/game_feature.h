@@ -19,30 +19,30 @@ typedef enum directions {
 } directions;
 
 // init
-void init_grid(int* grid);
+void init_grid(uint16_t** grid);
 
 // desinit
-void desinit_grid(int* grid);
+void desinit_grid(uint16_t** grid);
 
-int get_cell_value(int* grid, int cell);
-void set_cell_value(int* grid, int cell, int value);
+int get_cell_value(uint16_t* grid, int cell);
+void set_cell_value(uint16_t* grid, int cell, int value);
 
 // recherche des cases vides
 // retourne le nombre de cellules vides
-int number_of_empty_cells(int* grid);
+int number_of_empty_cells(uint16_t* grid);
 
 // ajout d'une nouvelle case
-void add_random_cell(int* grid);
+void add_random_cell(uint16_t* grid);
 
 // décalage d'une case
-void move_cell_up(int* grid, int cell);
-void move_cell_right(int* grid, int cell);
-void move_cell_down(int* grid, int cell);
-void move_cell_left(int* grid, int cell);
-void move_cell(int* grid, int cell, enum directions dir);
+void move_cell_up(uint16_t* grid, int cell);
+void move_cell_right(uint16_t* grid, int cell);
+void move_cell_down(uint16_t* grid, int cell);
+void move_cell_left(uint16_t* grid, int cell);
+void move_cell(uint16_t* grid, int cell, enum directions dir);
 
 // fusion de 2 cases
-void merge_cells(int* grid, int cella, int cellb);
+void merge_cells(uint16_t* grid, int cella, int cellb);
 
 // décaler toutes les cases
-void move_all(int* grid, enum directions dir);
+void move_all(uint16_t* grid, enum directions dir);
