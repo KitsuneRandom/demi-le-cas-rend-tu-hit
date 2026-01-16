@@ -7,16 +7,21 @@
 
 int main(void) {
     srand(time(NULL));
-    // Grille de test (4x4)
-    /*uint32_t grid[16] = {
-        2,    4,    8,    16,
-        32,   64,   128,  256,
-        512,  1024, 2048, 0,
-        0,    2,    4,    8
-    };*/
     uint16_t* grid = NULL;
 
     init_grid(&grid);
+    set_cell_value(grid, 0, 2); 
+    set_cell_value(grid, 1, 4); 
+    set_cell_value(grid, 2, 8); 
+    set_cell_value(grid, 3, 16);
+    set_cell_value(grid, 4, 32);
+    set_cell_value(grid, 5, 64); 
+    set_cell_value(grid, 6, 128);
+    set_cell_value(grid, 7, 256);
+    set_cell_value(grid, 8, 512);
+    set_cell_value(grid, 9, 1024);
+    set_cell_value(grid, 10, 2048); 
+
     print_grid(grid);
     desinit_grid(&grid);
 

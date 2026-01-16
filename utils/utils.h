@@ -1,16 +1,18 @@
 #pragma once
 
-// Jolis print - utilisation : printf(BOLDWHITE("blabla"));
-#define RED(string) "\033[0;31m"string"\033[0m" 
-#define BOLDRED(string) "\033[1;31m"string"\033[0m" 
-#define GREEN(string) "\033[0;32m"string"\033[0m"
-#define BOLDGREEN(string) "\033[1;32m"string"\033[0m"
-#define YELLOW(string) "\033[0;33m"string"\033[0m"
-#define BLUE(string) "\033[0;34m" string"\033[0m" 
-#define MAGENTA(string) "\033[0;35m"string"\033[0m"
-#define CYAN(string) "\033[0;36m"string"\033[0m"
-#define BOLDWHITE(string) "\033[1;37m"string"\033[0m"
+#define ANSI_RESET "\033[0m"
 
+#define VIOLET_CLAIR "\033[38;2;200;160;255m"
+#define VIOLET "\033[38;2;160;100;255m"
+#define BLEU "\033[38;2;80;120;255m"
+#define BLEU_CYAN "\033[38;2;0;170;255m"
+#define CYAN "\033[38;2;0;210;210m"
+#define VERT_CLAIR "\033[38;2;0;220;140m"
+#define VERT "\033[38;2;0;200;0m"
+#define JAUNE_CLAIR "\033[38;2;230;230;0m"
+#define JAUNE "\033[38;2;255;200;0m"
+#define ORANGE "\033[38;2;255;140;0m"
+#define ROUGE "\033[38;2;255;60;60m"
 
 /*
 Jolis tableaux pour l'affichage

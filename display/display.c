@@ -41,37 +41,37 @@ void print_number(const uint16_t * n) {
             printf("        ");
             break;
         case 2:
-            printf("    %hd   ", *n);
+            printf(VIOLET_CLAIR "    2   " ANSI_RESET);
             break;
         case 4:
-            printf(BOLDWHITE("    %hd   "), *n);
+            printf(VIOLET "    4   " ANSI_RESET);
             break;
         case 8:
-            printf(YELLOW("    %hd   "), *n);
+            printf(BLEU "    8   " ANSI_RESET);
             break;
         case 16:
-            printf(GREEN("   %hd   "), *n);
+            printf(BLEU_CYAN "   16   " ANSI_RESET);
             break;
         case 32:
-            printf(CYAN("   %hd   "), *n);
+            printf(CYAN "   32   " ANSI_RESET);
             break;
         case 64:
-            printf(BLUE("   %hd   "), *n);
+            printf(VERT_CLAIR "   64   " ANSI_RESET);
             break;
         case 128:
-            printf(MAGENTA("   %hd  "), *n);
+            printf(VERT "   128  " ANSI_RESET);
             break;
         case 256:
-            printf(RED("   %hd  "), *n);
+            printf(JAUNE_CLAIR "   256  " ANSI_RESET);
             break;
         case 512:
-            printf(BOLDRED("   %hd  "), *n);
+            printf(JAUNE "   512  " ANSI_RESET);
             break;
         case 1024:
-            printf(BOLDGREEN("  %hd  "), *n);
+            printf(ORANGE "  1024  " ANSI_RESET);
             break;
         case 2048:
-            printf(BOLDWHITE("  %hd  "), *n);
+            printf(ROUGE "  2048  " ANSI_RESET);
             break;
         default:
             printf("WHATTT");
