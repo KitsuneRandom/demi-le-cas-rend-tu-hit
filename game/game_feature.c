@@ -11,12 +11,20 @@ void desinit_grid(int* grid) {
   grid = NULL;
 }
 
+int get_cell_value(int* grid, int cell) {
+  return grid[cell];
+}
+
+void set_cell_value(int* grid, int cell, int value) {
+  grid[cell] = value;
+}
+
 // recherche des cases vides
 // retourne le nombre de cellules vides
 int number_of_empty_cells(int* grid) {
   int number_empty = 0;
   for (int i = 0; i < GRID_SIZE; i++) {
-    if (grid[i] == 0) {
+    if (get_cell_value(grid, i) == 0) {
       number_empty++;
     }
   }
@@ -45,16 +53,89 @@ void add_random_cell(int* grid) {
   int cell = choose_random_empty_cell(grid);
   int number = rand() % 2;
   if (number == 0) {
-    grid[cell] = 2;
+    set_cell_value(grid, cell, 2);
   }
   else {
-    grid[cell] = 4;
+    set_cell_value(grid, cell, 4);
   }
 }
 
 // décalage d'une case
-void move_cell(int* grid, int cell, enum directions dir) {
+void move_cell_up(int* grid, int cell) {
+  int value = get_cell_value(grid, cell);
+  if (value == 0) {
+    return;
+  }
 
+  int row = cell / 4;
+  int col = cell % 4;
+
+  while (row > 0 && get_cell_value(grid, (row - 1) * 4 + col) == 0) {
+    set_cell_value(grid, row * 4 + col], 0);
+    row--;
+    set_cell_value(grid, row * 4 + col], value);
+  }
+}
+
+void move_cell_right(int* grid, int cell) {
+  int value = get_cell_value(grid, cell);
+  if (value == 0) {
+    return;
+  }
+
+  int row = cell / 4;
+  int col = cell % 4;
+
+  while (col < 3 && get_cell_value(grid, (col + 1)) == 0) {
+    set_cell_value(grid, row * 4 + col, 0);
+    col++;
+    set_cell_value(grid, row * 4 + col, value);
+  }
+}
+
+void move_cell_down(int* grid, int cell) {
+  int value = get_cell_value(grid, cell);
+  if (value == 0) {
+    return;
+  }
+
+  int row = cell / 4;
+  int col = cell % 4;
+
+  while (row < 3 && grid[(row + 1) * 4 + col] == 0) {
+    set_cell_value(grid, row * 4 + col, 0);
+    row++;
+    set_cell_value(grid, row * 4 + col, value);
+  }
+}
+
+void move_cell_left(int* grid, int cell) {
+  int value = get_cell_value(grid, cell);
+  if (value == 0) {
+    return;
+  }
+
+  int row = cell / 4;
+  int col = cell % 4;
+
+  while (col > 0 && grid[row * 4 + (col - 1)] == 0) {
+    set_cell_value(grid, row * 4 + col, 0);
+    col--;
+    set_cell_value(grid, row * 4 + col, value);
+  }
+}
+
+void move_cell(int* grid, int cell, enum directions dir) {
+  switch (dir) {
+    case directions.Up :
+      move_cell_up(grid, cell);
+    case directions.Right :
+      move_cell_right(grid, cell);
+    case directions.Down :
+      move_cell_down(grid, cell);
+    case directions.Left :
+      move_cell_left(grid, cell);
+  }
 }
 
 // fusion de 2 cases

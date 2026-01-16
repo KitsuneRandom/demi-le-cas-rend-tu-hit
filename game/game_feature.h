@@ -19,8 +19,11 @@ enum directions { Up = 0, Right, Down, Left};
 // init
 void init_grid(int* grid);
 
-//desinit
+// desinit
 void desinit_grid(int* grid);
+
+int get_cell_value(int* grid, int cell);
+void set_cell_value(int* grid, int cell, int value);
 
 // recherche des cases vides
 // retourne le nombre de cellules vides
@@ -30,6 +33,10 @@ int* number_of_empty_cells(int* grid);
 void add_random_cell(int* grid);
 
 // décalage d'une case
+void move_cell_up(int* grid, int cell);
+void move_cell_right(int* grid, int cell);
+void move_cell_down(int* grid, int cell);
+void move_cell_left(int* grid, int cell);
 void move_cell(int* grid, int cell, enum directions dir);
 
 // fusion de 2 cases
