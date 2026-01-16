@@ -149,9 +149,9 @@ void move_cell(uint16_t* grid, int cell, directions dir) {
   }
 }
 
-// fusion de 2 cases
-void merge_cells(uint16_t* grid, int cella, int cellb) {
-
+// fusion de 2 cases, retourne le score obtenu
+int merge_cells(uint16_t* grid, int cella, int cellb) {
+  return 0;
 }
 
 // décaler toutes les cases

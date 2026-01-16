@@ -74,7 +74,7 @@ void print_number(const uint16_t * n) {
             printf(BOLDWHITE("  %hd  "), *n);
             break;
         default:
-            printf("WHATTT");
+            printf(" WHATTT ");
             break;
     }
 }

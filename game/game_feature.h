@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -42,7 +44,7 @@ void move_cell_left(uint16_t* grid, int cell);
 void move_cell(uint16_t* grid, int cell, enum directions dir);
 
 // fusion de 2 cases
-void merge_cells(uint16_t* grid, int cella, int cellb);
+int merge_cells(uint16_t* grid, int cella, int cellb);
 
 // décaler toutes les cases
 void move_all(uint16_t* grid, enum directions dir);
