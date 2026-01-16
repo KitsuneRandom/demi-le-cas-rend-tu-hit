@@ -1,8 +1,11 @@
-#include "game_features.h"
+#include "game_feature.h"
 
 // init
 void init_grid(int* grid) {
   grid = malloc(GRID_SIZE*sizeof(int));
+  if (grid == NULL) {
+    exit(EXIT_FAILURE);
+  }
 }
 
 // desinit
@@ -35,7 +38,7 @@ int number_of_empty_cells(int* grid) {
 int choose_random_empty_cell(int* grid) {
   int nb_empty = number_of_empty_cells(grid);
   if (nb_empty == 0) {
-    return 0;
+    return -1;
   }
   int cell_chose = rand() % (nb_empty + 1);
   for (int i = 0; i < GRID_SIZE; i++) {
@@ -46,6 +49,7 @@ int choose_random_empty_cell(int* grid) {
       }
     }
   }
+  return -1;
 }
 
 // ajout d'une nouvelle case
@@ -71,9 +75,9 @@ void move_cell_up(int* grid, int cell) {
   int col = cell % 4;
 
   while (row > 0 && get_cell_value(grid, (row - 1) * 4 + col) == 0) {
-    set_cell_value(grid, row * 4 + col], 0);
+    set_cell_value(grid, row * 4 + col, 0);
     row--;
-    set_cell_value(grid, row * 4 + col], value);
+    set_cell_value(grid, row * 4 + col, value);
   }
 }
 
@@ -125,16 +129,20 @@ void move_cell_left(int* grid, int cell) {
   }
 }
 
-void move_cell(int* grid, int cell, enum directions dir) {
+void move_cell(int* grid, int cell, directions dir) {
   switch (dir) {
-    case directions.Up :
+    case Up :
       move_cell_up(grid, cell);
-    case directions.Right :
+      break;
+    case Right :
       move_cell_right(grid, cell);
-    case directions.Down :
+      break;
+    case Down :
       move_cell_down(grid, cell);
-    case directions.Left :
+      break;
+    case Left :
       move_cell_left(grid, cell);
+      break;
   }
 }
 
@@ -144,6 +152,6 @@ void merge_cells(int* grid, int cella, int cellb) {
 }
 
 // décaler toutes les cases
-void move_all(int* grid, enum directions dir) {
+void move_all(int* grid, directions dir) {
 
 }

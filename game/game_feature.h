@@ -11,10 +11,12 @@
 // Cellule : représentée par son indice dans le tableau.
 // Pour trouver la valeur : grid[x]
 
-#define GRID_SIZE = 16;
+#define GRID_SIZE 16
 
 // enum pour les différentes directions
-enum directions { Up = 0, Right, Down, Left};
+typedef enum directions { 
+    Up = 0, Right, Down, Left
+} directions;
 
 // init
 void init_grid(int* grid);
@@ -27,7 +29,7 @@ void set_cell_value(int* grid, int cell, int value);
 
 // recherche des cases vides
 // retourne le nombre de cellules vides
-int* number_of_empty_cells(int* grid);
+int number_of_empty_cells(int* grid);
 
 // ajout d'une nouvelle case
 void add_random_cell(int* grid);
