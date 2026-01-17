@@ -13,7 +13,7 @@
 #include "display.h"
 #include "game/game_feature.h"
 
-bool run = true;
+bool run = false;
 
 char ask_user_input(void) {
     char input;
@@ -51,23 +51,19 @@ directions ask_user_dir(void) {
     }
 }
 
-void end_game() {
-    run = false;
-    remove("main_to_main");
-    kill(getpid(), SIGTERM);
-}
+void end_game() {run = false;}
 
 int main() {
     system("clear");
     if (fork()) {
+        // parent
 
-        struct sigaction sa_end;
-        sa_end.sa_handler = end_game;
-        sigaction(SIGINT, &sa_end, NULL);
+        run = true;
 
         sigset_t set;
         sigemptyset(&set);
         sigaddset(&set, SIGRTMIN);
+        sigaddset(&set, SIGRTMIN + 9);
         sigprocmask(SIG_BLOCK, &set, NULL);
 
         // parent
@@ -95,14 +91,20 @@ int main() {
 
         while (run) {
             sigwait(&set, &signum);
-            directions direction = ask_user_dir();
-            ssize_t bytes_written = write(o, &direction, sizeof(direction));
-            if (bytes_written == -1) {
-                perror("write direction to main_to_main");
-                exit(EXIT_FAILURE);
+            if (signum != SIGRTMIN + 9) {
+                directions direction = ask_user_dir();
+                ssize_t bytes_written = write(o, &direction, sizeof(direction));
+                if (bytes_written == -1) {
+                    perror("write direction to main_to_main");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            else {
+                end_game();
             }
         }
 
+        close(o);
         wait(NULL);
         remove("main_to_main");
     }
@@ -111,5 +113,5 @@ int main() {
         execv("./game/2048", (char*[]){"./game/2048", NULL});
     }
 
-    return EXIT_SUCCESS;
+    exit(EXIT_SUCCESS);
 }

@@ -6,9 +6,11 @@ grid g;
 pid_t self_pid;
 pid_t display_pid;
 pid_t main_pid;
+bool run = false;
 
 void end_game() {
-    kill(main_pid, SIGINT);
+    run = false;
+    kill(main_pid, SIGRTMIN + 9);
 }
 
 void* thread_move_score(void* arg) {
@@ -16,23 +18,26 @@ void* thread_move_score(void* arg) {
     sigemptyset(&set);
 
     for (int i = 1; i <= 4; i++) sigaddset(&set, SIGRTMIN + i);
+    sigaddset(&set, SIGRTMIN + 9);
 
-    while (true) {
+    while (run) {
         int signum;
         sigwait(&set, &signum);
 
-        if (signum == SIGRTMIN + 1) {
-            move_all(&g, Up);
-        } else if (signum == SIGRTMIN + 2) {
-            move_all(&g, Left);
-        } else if (signum == SIGRTMIN + 3) {
-            move_all(&g, Down);
-        } else if (signum == SIGRTMIN + 4) {
-            move_all(&g, Right);
-        }
-        add_random_cell(&g);
+        if (signum != SIGRTMIN + 9) {
+            if (signum == SIGRTMIN + 1) {
+                move_all(&g, Up);
+            } else if (signum == SIGRTMIN + 2) {
+                move_all(&g, Left);
+            } else if (signum == SIGRTMIN + 3) {
+                move_all(&g, Down);
+            } else if (signum == SIGRTMIN + 4) {
+                move_all(&g, Right);
+            }
+            add_random_cell(&g);
 
-        kill(self_pid, SIGRTMIN + 5);
+            kill(self_pid, SIGRTMIN + 5);
+        }
     }
 
     pthread_exit(NULL);
@@ -60,19 +65,25 @@ void* thread_goal(void* arg) {
 
         game_state state;
 
-        while (true) {
+        while (run) {
             sigwait(&set, &signum);
             state = check_game_state(&g);
+            
+            if (state != ONGOING) end_game();
+
             write(pipefd[1], &g, sizeof(grid));
             write(pipefd[1], &state, sizeof(game_state));
             kill(self_pid, SIGRTMIN + 6);
         }
+        close(pipefd[1]);
+        wait(NULL);
     }
     else {
         // child
         close(pipefd[1]);
 
         grid received_grid;
+        game_state state;
 
         read(pipefd[0], &received_grid, sizeof(grid));
         printf("Score : %d\n\n", received_grid.score);
@@ -84,27 +95,28 @@ void* thread_goal(void* arg) {
         sigaddset(&set, SIGRTMIN + 7);
 
         int signum;
-        
-        game_state state;
 
-        while (true) {
+        while (run) {
             sigwait(&set, &signum);
+
             system("clear");
             read(pipefd[0], &received_grid, sizeof(grid));
             read(pipefd[0], &state, sizeof(game_state));
 
-            printf("Score : %d\n\n", received_grid.score);
-            print_grid(received_grid.cells);
-            if (state == WIN) {
-                printf("Félicitations ! Vous avez gagné !\n");
-                end_game();
-            } else if (state == LOSE) {
-                printf("Dommage ! Vous avez perdu !\n");
-                end_game();
+            if (state != ONGOING) end_game(); // child and parent don't share run variable
+
+            if (run) {
+                printf("Score : %d\n\n", received_grid.score);
+                print_grid(received_grid.cells);
+
+                if (state == WIN) printf("Félicitations ! Vous avez gagné !\n");
+                else if (state == LOSE) printf("Dommage ! Vous avez perdu !\n");
             }
 
             kill(self_pid, SIGRTMIN + 8);
         }
+        close(pipefd[0]);
+        exit(EXIT_SUCCESS);
     }
 
     pthread_exit(NULL);
@@ -129,20 +141,18 @@ void* thread_main(void* arg) {
         exit(EXIT_FAILURE);
     }
 
-    sigset_t set, set2;
+    sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGRTMIN + 6);
-    
-    sigemptyset(&set2);
-    sigaddset(&set2, SIGRTMIN + 8);
+    sigaddset(&set, SIGRTMIN + 8);
     
     int signum;
     
     directions direction;
 
-    sigwait(&set2, &signum);
+    sigwait(&set, &signum);
 
-    while (true) {
+    while (run) {
         kill(main_pid, SIGRTMIN);
         read(o, &direction, sizeof(direction));
         switch (direction) {
@@ -167,21 +177,24 @@ void* thread_main(void* arg) {
         }
         sigwait(&set, &signum);
         kill(display_pid, SIGRTMIN + 7);
-        sigwait(&set2, &signum);
+        sigwait(&set, &signum);
     }
-
+    pthread_kill(move_score, SIGRTMIN + 9);
     pthread_join(move_score, NULL);
     pthread_join(goal, NULL);
 
+    close(o);
     pthread_exit(NULL);
 }
 
 int main() {
     srand(time(NULL));
 
+    run = true;
+
     sigset_t mask;
     sigemptyset(&mask);
-    for (int i = SIGRTMIN; i <= SIGRTMIN + 8; i++) sigaddset(&mask, i);
+    for (int i = SIGRTMIN; i <= SIGRTMIN + 9; i++) sigaddset(&mask, i);
     sigprocmask(SIG_BLOCK, &mask, NULL);
 
     g = (grid){0};
@@ -195,5 +208,5 @@ int main() {
 
     print_grid(g.cells);
 
-    return EXIT_SUCCESS;
+    exit(EXIT_SUCCESS);
 }

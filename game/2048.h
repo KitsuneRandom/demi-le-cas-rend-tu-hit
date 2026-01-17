@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "game_feature.h"
 
 void* thread_move_score(void* arg);
