@@ -43,7 +43,7 @@ int choose_random_empty_cell(uint16_t* grid) {
   if (nb_empty == 0) {
     return -1;
   }
-  int cell_chose = rand() % (nb_empty + 1);
+  int cell_chose = rand() % nb_empty + 1;
   for (int i = 0; i < GRID_SIZE; i++) {
     if (grid[i] == 0) {
       cell_chose--;
