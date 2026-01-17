@@ -86,24 +86,31 @@ int main(void) {
     //print_grid(grid);
     char end_game = 0; // 0 : pas fini, 1 : fini gagné, 2 : fini perdu, autre : wtf
     while (end_game == 0) {
-        add_random_cell(grid);
+        if (!add_random_cell(grid)) {
+            end_game = 2; // perdu
+            break;
+        }
         print_grid(grid);    // à gérer plus tard avec le processus affichage
         directions dir = ask_user_dir();
         //Envoyer les infos avec un pipe
         // solution temp pour tester
         switch (dir) {
             case Up :
-                end_game = 0;
+                move_all(grid, Up);
                 break;
             case Right :
-                end_game = 1;
+                move_all(grid, Right);
                 break;
             case Down :
-                end_game = 2;
+                move_all(grid, Down);
                 break;
             case Left :
-                end_game = 3;
+                move_all(grid, Left);
                 break;
+        }
+        if (check_win(grid)) {
+            end_game = 1; // gagné
+            break;
         }
     }
     switch (end_game) {
