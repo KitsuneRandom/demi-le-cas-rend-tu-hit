@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 #include "display.h"
 #include "game/game_feature.h"
 
@@ -42,6 +47,25 @@ directions ask_user_dir(void) {
 
 int main(void) {
     srand(time(NULL));
+
+    // int main_to_main = mkfifo("main_to_main", 0666);
+    // if (main_to_main == -1) {
+    //     perror("mkfifo main_to_main");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // int o = open("main_to_main", O_WRONLY);
+    // if (o == -1) {
+    //     perror("open main_to_main");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // pid_t pid = getpid();
+    // ssize_t bytes_written = write(o, &pid, sizeof(pid));
+    // if (bytes_written == -1) {
+    //     perror("write pid to main_to_main");
+    //     exit(EXIT_FAILURE);
+    // }
     
     printf("Bienvenue dans ce super 2048 (super jsp mais en tt cas 2048)\nLe but du jeu c'est de pas perdre le jeu, et pour ça il faut éviter de remplir la grille\nVous allez donc devoir fusionner les cases de même valeur jusqu'à obtenir une case 2048\nVous utiliserez Z, Q, S, et D pour vous déplpacer en haut, à gauche, en bas et à droite\n");
     printf("Voici un exemple de grille : \n");
@@ -96,6 +120,9 @@ int main(void) {
             printf("Wtf\n");
             break;
     }
+
+    // close(o);
+    // unlink("main_to_main");
     
     desinit_grid(&grid);
 
