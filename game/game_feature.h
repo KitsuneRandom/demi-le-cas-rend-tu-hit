@@ -34,17 +34,13 @@ void set_cell_value(uint16_t* grid, int cell, int value);
 int number_of_empty_cells(uint16_t* grid);
 
 // ajout d'une nouvelle case
-void add_random_cell(uint16_t* grid);
+bool add_random_cell(uint16_t* grid);
 
-// décalage d'une case
-void move_cell_up(uint16_t* grid, int cell);
-void move_cell_right(uint16_t* grid, int cell);
-void move_cell_down(uint16_t* grid, int cell);
-void move_cell_left(uint16_t* grid, int cell);
-void move_cell(uint16_t* grid, int cell, enum directions dir);
-
-// fusion de 2 cases
-int merge_cells(uint16_t* grid, int cella, int cellb);
+// Compacte une ligne ou une colonne en fonction de la direction du déplacement
+void compact_line(uint16_t* line);
 
 // décaler toutes les cases
 void move_all(uint16_t* grid, enum directions dir);
+
+// Vérifie si le joueur a gagné
+bool check_win(uint16_t* grid);
