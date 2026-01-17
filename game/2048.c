@@ -99,13 +99,14 @@ void* thread_goal(void* arg) {
         while (run) {
             sigwait(&set, &signum);
 
-            system("clear");
+            
             read(pipefd[0], &received_grid, sizeof(grid));
             read(pipefd[0], &state, sizeof(game_state));
 
             if (state != ONGOING) end_game(); // child and parent don't share run variable
 
             if (run) {
+                system("clear");
                 printf("Score : %d\n\n", received_grid.score);
                 print_grid(received_grid.cells);
 
@@ -205,8 +206,6 @@ int main() {
     pthread_t main;
     pthread_create(&main, NULL, thread_main, NULL);
     pthread_join(main, NULL);
-
-    print_grid(g.cells);
 
     exit(EXIT_SUCCESS);
 }
