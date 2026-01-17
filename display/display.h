@@ -17,7 +17,7 @@ void print_middle_line();
 void print_last_line();
 
 // Affiche le nombre de la bonne couleur
-void print_number(const uint16_t * n);
+void print_number(const uint16_t n);
 
 // Affiche la grille de jeu à l'aide des fonctions précédentes
 void print_grid(const uint16_t *grid);

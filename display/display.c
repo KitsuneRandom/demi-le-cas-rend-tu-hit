@@ -35,43 +35,43 @@ void print_last_line() {
 }
 
 // Affiche le nombre de la bonne couleur
-void print_number(const uint16_t * n) {
-    switch (*n) {
+void print_number(const uint16_t n) {
+    switch (n) {
         case 0:
             printf("        ");
             break;
         case 2:
-            printf("    %hd   ", *n);
+            printf("    %hd   ", n);
             break;
         case 4:
-            printf(BOLDWHITE("    %hd   "), *n);
+            printf(BOLDWHITE("    %hd   "), n);
             break;
         case 8:
-            printf(YELLOW("    %hd   "), *n);
+            printf(YELLOW("    %hd   "), n);
             break;
         case 16:
-            printf(GREEN("   %hd   "), *n);
+            printf(GREEN("   %hd   "), n);
             break;
         case 32:
-            printf(CYAN("   %hd   "), *n);
+            printf(CYAN("   %hd   "), n);
             break;
         case 64:
-            printf(BLUE("   %hd   "), *n);
+            printf(BLUE("   %hd   "), n);
             break;
         case 128:
-            printf(MAGENTA("   %hd  "), *n);
+            printf(MAGENTA("   %hd  "), n);
             break;
         case 256:
-            printf(RED("   %hd  "), *n);
+            printf(RED("   %hd  "), n);
             break;
         case 512:
-            printf(BOLDRED("   %hd  "), *n);
+            printf(BOLDRED("   %hd  "), n);
             break;
         case 1024:
-            printf(BOLDGREEN("  %hd  "), *n);
+            printf(BOLDGREEN("  %hd  "), n);
             break;
         case 2048:
-            printf(BOLDWHITE("  %hd  "), *n);
+            printf(BOLDWHITE("  %hd  "), n);
             break;
         default:
             printf(" WHATTT ");
@@ -83,7 +83,7 @@ void print_number(const uint16_t * n) {
 void print_grid(const uint16_t *grid) {
     print_first_line();
     for (int i = 0; i < 16; i++) {
-        print_number(&grid[i]);
+        print_number(grid[i]);
         print_separator(i % 4 == 3 && i != 15);
     }
     print_last_line();

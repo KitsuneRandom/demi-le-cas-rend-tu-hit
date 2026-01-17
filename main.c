@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200112L
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -12,43 +13,63 @@
 #include "display.h"
 #include "game/game_feature.h"
 
+bool run = true;
+
 char ask_user_input(void) {
     char input;
-    char is_ok = 1;
+    char is_ok = false;
     char c;
-    while (is_ok != 0) {
-        printf("Entrez Z (haut), Q (gauche), S (bas) ou D (droite) : ");
+    while (is_ok != true) {
+        printf("Entrez z (haut), q (gauche), s (bas) ou d (droite) : ");
         scanf(" %c", &input);
         
         while ((c = getchar()) != '\n' && c != EOF); // Vider le reste de la saisie de l'utilisateur après le premier caractère lu
         
-        if (input != 'Z' && input != 'Q' && input != 'S' && input != 'D') {
+        if (input != 'z' && input != 'q' && input != 's' && input != 'd') {
             printf("valeur saisie invalide.\n");
         } else {
-            is_ok = 0;
+            is_ok = true;
         }
     }
+    printf("user input : %c\n", input);
     return input;
 }
 
 directions ask_user_dir(void) {
     char input = ask_user_input();
     switch (input) {
-        case 'Z' :
+        case 'z' :
             return Up;
-        case 'Q' :
+        case 'q' :
             return Left;
-        case 'S' :
+        case 's' :
             return Down;
-        case 'D' :
+        case 'd' :
             return Right;
         default :
             return Up;
     }
 }
 
-int main(void) {
+void end_game() {
+    run = false;
+    remove("main_to_main");
+    kill(getpid(), SIGTERM);
+}
+
+int main() {
+    system("clear");
     if (fork()) {
+
+        struct sigaction sa_end;
+        sa_end.sa_handler = end_game;
+        sigaction(SIGINT, &sa_end, NULL);
+
+        sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, SIGRTMIN);
+        sigprocmask(SIG_BLOCK, &set, NULL);
+
         // parent
         int main_to_main = mkfifo("main_to_main", 0666);
         if (main_to_main == -1) {
@@ -68,14 +89,26 @@ int main(void) {
             perror("write pid to main_to_main");
             exit(EXIT_FAILURE);
         }
-        printf("Bienvenue dans ce super 2048 (super jsp mais en tt cas 2048)\nLe but du jeu c'est de pas perdre le jeu, et pour ça il faut éviter de remplir la grille\nVous allez donc devoir fusionner les cases de même valeur jusqu'à obtenir une case 2048\nVous utiliserez Z, Q, S, et D pour vous déplpacer en haut, à gauche, en bas et à droite\n");
+        printf("Bienvenue dans ce super 2048 (super jsp mais en tt cas 2048)\nLe but du jeu c'est de pas perdre le jeu, et pour ça il faut éviter de remplir la grille\nVous allez donc devoir fusionner les cases de même valeur jusqu'à obtenir une case 2048\nVous utiliserez z, q, s, et d pour vous déplpacer en haut, à gauche, en bas et à droite\nVous pouvez quitter a tout moment avec ctrl-c (promis, l'arret est clean)\n");
         
-        signal(SIGINT, SIG_IGN);
+        int signum;
+
+        while (run) {
+            sigwait(&set, &signum);
+            directions direction = ask_user_dir();
+            ssize_t bytes_written = write(o, &direction, sizeof(direction));
+            if (bytes_written == -1) {
+                perror("write direction to main_to_main");
+                exit(EXIT_FAILURE);
+            }
+        }
+
         wait(NULL);
+        remove("main_to_main");
     }
     else {
-        // enfant
-        execv("./game/2048", (char*[]){"./2048", NULL});
+        // child
+        execv("./game/2048", (char*[]){"./game/2048", NULL});
     }
 
     return EXIT_SUCCESS;

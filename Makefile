@@ -5,35 +5,29 @@ INCLUDES = -Idisplay -Iutils
 TARGET  = bin/demi_le_cas bin/game/2048
 
 # ===== SOURCES =====
-SRC = main.c \
-      display/display.c \
-      utils/utils.c \
-	  game/game_feature.c
-
-SRC2 = game/2048.c \
-      display/display.c \
+SRC = display/display.c \
       utils/utils.c \
 	  game/game_feature.c
 
 OBJ = $(SRC:.c=.o)
-OBJ2 = $(SRC2:.c=.o)
 
 # ===== RULES =====
 all: $(TARGET)
 
-bin/demi_le_cas : $(OBJ)
+bin/demi_le_cas : $(OBJ) main.o
 	mkdir -p bin
-	$(CC) $(OBJ) -o $@
+	$(CC) $(OBJ) main.o -o $@
 
-bin/game/2048 : $(OBJ2)
+bin/game/2048 : $(OBJ) game/2048.o
 	mkdir -p bin/game
-	$(CC) $(OBJ2) -o $@
-
+	$(CC) $(OBJ) game/2048.o -o $@
+	
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJ) main.o game/2048.o display/display.o
+	rm -fr bin
 
 fclean: clean
 	rm -f $(TARGET)
