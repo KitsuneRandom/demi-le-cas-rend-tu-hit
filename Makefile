@@ -2,11 +2,10 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Werror -Wno-unused-parameter -std=c11
 INCLUDES = -Idisplay -Iutils
-TARGET  = demi_le_cas
+TARGET  = bin/demi_le_cas bin/game/2048
 
 # ===== SOURCES =====
-SRC = main.c \
-      display/display.c \
+SRC = display/display.c \
       utils/utils.c \
 	  game/game_feature.c
 
@@ -15,14 +14,20 @@ OBJ = $(SRC:.c=.o)
 # ===== RULES =====
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $@
+bin/demi_le_cas : $(OBJ) main.o
+	mkdir -p bin
+	$(CC) $(OBJ) main.o -o $@
 
+bin/game/2048 : $(OBJ) game/2048.o
+	mkdir -p bin/game
+	$(CC) $(OBJ) game/2048.o -o $@
+	
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJ) main.o game/2048.o display/display.o
+	rm -fr bin
 
 fclean: clean
 	rm -f $(TARGET)

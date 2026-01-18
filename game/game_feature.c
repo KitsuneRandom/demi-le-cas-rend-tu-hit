@@ -1,36 +1,20 @@
 #include "game_feature.h"
 
-// init
-void init_grid(uint16_t** grid) {
-    *grid = calloc(GRID_SIZE, sizeof(uint16_t)); // calloc met bien a 0 au lieu de tout et n'importe quoi comme malloc
-    if (*grid == NULL) {
-        perror("calloc");
-        exit(EXIT_FAILURE);
-    }
+
+int get_cell_value(grid* g, int cell) {
+  return g->cells[cell];
 }
 
-
-// desinit
-void desinit_grid(uint16_t** grid) {
-    free(*grid);
-    *grid = NULL;
-}
-
-
-int get_cell_value(uint16_t* grid, int cell) {
-  return grid[cell];
-}
-
-void set_cell_value(uint16_t* grid, int cell, int value) {
-  grid[cell] = value;
+void set_cell_value(grid* g, int cell, int value) {
+  g->cells[cell] = value;
 }
 
 // recherche des cases vides
 // retourne le nombre de cellules vides
-int number_of_empty_cells(uint16_t* grid) {
+int number_of_empty_cells(grid* g) {
   int number_empty = 0;
   for (int i = 0; i < GRID_SIZE; i++) {
-    if (get_cell_value(grid, i) == 0) {
+    if (get_cell_value(g, i) == 0) {
       number_empty++;
     }
   }
@@ -38,14 +22,14 @@ int number_of_empty_cells(uint16_t* grid) {
 }
 
 // choisit une case vide au hasard
-int choose_random_empty_cell(uint16_t* grid) {
-  int nb_empty = number_of_empty_cells(grid);
+int choose_random_empty_cell(grid* g) {
+  int nb_empty = number_of_empty_cells(g);
   if (nb_empty == 0) {
     return -1;
   }
-  int cell_chose = rand() % (nb_empty + 1);
+  int cell_chose = rand() % nb_empty + 1;
   for (int i = 0; i < GRID_SIZE; i++) {
-    if (grid[i] == 0) {
+    if (get_cell_value(g, i) == 0) {
       cell_chose--;
       if (cell_chose == 0) {
         return i;
@@ -56,105 +40,132 @@ int choose_random_empty_cell(uint16_t* grid) {
 }
 
 // ajout d'une nouvelle case
-void add_random_cell(uint16_t* grid) {
-  int cell = choose_random_empty_cell(grid);
+bool add_random_cell(grid* g) {
+  int cell = choose_random_empty_cell(g);
+  if (cell == -1) {
+    return false;
+  }
   int number = rand() % 2;
   if (number == 0) {
-    set_cell_value(grid, cell, 2);
+    set_cell_value(g, cell, 2);
   }
   else {
-    set_cell_value(grid, cell, 4);
+    set_cell_value(g, cell, 4);
   }
+  return true;
 }
 
-// décalage d'une case
-void move_cell_up(uint16_t* grid, int cell) {
-  int value = get_cell_value(grid, cell);
-  if (value == 0) {
-    return;
+// Compacte une ligne ou une colonne en fonction de la direction du déplacement
+int compact_line(uint16_t* line) {
+  int score = 0;
+  // Enlever les 0
+  uint16_t new_line[4] = {0};
+  int index = 0;
+  for (int i = 0; i < 4; i++) {
+      if (line[i] != 0) {
+        new_line[index] = line[i];
+        index++;
+      }
   }
-
-  int row = cell / 4;
-  int col = cell % 4;
-
-  while (row > 0 && get_cell_value(grid, (row - 1) * 4 + col) == 0) {
-    set_cell_value(grid, row * 4 + col, 0);
-    row--;
-    set_cell_value(grid, row * 4 + col, value);
+  // Fusionner les cases
+  for (int i = 0; i < 3; i++) {
+      if (new_line[i] != 0 && new_line[i] == new_line[i+1]) {
+          new_line[i] *= 2;
+          new_line[i+1] = 0;
+          score += new_line[i];
+      }
   }
-}
-
-void move_cell_right(uint16_t* grid, int cell) {
-  int value = get_cell_value(grid, cell);
-  if (value == 0) {
-    return;
+  // Enlever les nouveaux 0 + remplir le reste avec des 0
+  index = 0;
+  for (int i = 0; i < 4; i++) {
+      if (new_line[i] != 0) {
+        line[index] = new_line[i];
+        index++;
+      }
   }
-
-  int row = cell / 4;
-  int col = cell % 4;
-
-  while (col < 3 && get_cell_value(grid, (col + 1)) == 0) {
-    set_cell_value(grid, row * 4 + col, 0);
-    col++;
-    set_cell_value(grid, row * 4 + col, value);
+  for (int i = index; i < 4; i++) {
+      line[i] = 0;
   }
-}
-
-void move_cell_down(uint16_t* grid, int cell) {
-  int value = get_cell_value(grid, cell);
-  if (value == 0) {
-    return;
-  }
-
-  int row = cell / 4;
-  int col = cell % 4;
-
-  while (row < 3 && grid[(row + 1) * 4 + col] == 0) {
-    set_cell_value(grid, row * 4 + col, 0);
-    row++;
-    set_cell_value(grid, row * 4 + col, value);
-  }
-}
-
-void move_cell_left(uint16_t* grid, int cell) {
-  int value = get_cell_value(grid, cell);
-  if (value == 0) {
-    return;
-  }
-
-  int row = cell / 4;
-  int col = cell % 4;
-
-  while (col > 0 && grid[row * 4 + (col - 1)] == 0) {
-    set_cell_value(grid, row * 4 + col, 0);
-    col--;
-    set_cell_value(grid, row * 4 + col, value);
-  }
-}
-
-void move_cell(uint16_t* grid, int cell, directions dir) {
-  switch (dir) {
-    case Up :
-      move_cell_up(grid, cell);
-      break;
-    case Right :
-      move_cell_right(grid, cell);
-      break;
-    case Down :
-      move_cell_down(grid, cell);
-      break;
-    case Left :
-      move_cell_left(grid, cell);
-      break;
-  }
-}
-
-// fusion de 2 cases
-void merge_cells(uint16_t* grid, int cella, int cellb) {
-
+  return score;
 }
 
 // décaler toutes les cases
-void move_all(uint16_t* grid, directions dir) {
+void move_all(grid* g, directions dir) {
+  for (int i = 0; i < 4; i++) {
+    uint16_t temp_line[4] = {0};
+    // Extraire la ligne ou la colonne en fonction de la direction
+    for (int j = 0; j < 4; j++) {
+      switch (dir) {
+        case Left:
+          temp_line[j] = get_cell_value(g, i * 4 + j);
+          break;
+        case Right:
+          temp_line[j] = get_cell_value(g, i * 4 + (3 - j));
+          break;
+        case Up:
+          temp_line[j] = get_cell_value(g, j * 4 + i);
+          break;
+        case Down:
+          temp_line[j] = get_cell_value(g, (3 - j) * 4 + i);
+          break;
+      }
+    }
+    g->score += compact_line(temp_line);
+    // Réécrire la ligne ou la colonne dans la grille
+    for (int j = 0; j < 4; j++) {
+      switch (dir) {
+        case Left:
+          set_cell_value(g, i * 4 + j, temp_line[j]);
+          break;
+        case Right:
+          set_cell_value(g, i * 4 + (3 - j), temp_line[j]);
+          break;
+        case Up:
+          set_cell_value(g, j * 4 + i, temp_line[j]);
+          break;
+        case Down:
+          set_cell_value(g, (3 - j) * 4 + i, temp_line[j]);
+          break;
+      }
+    }
+  }
+}
 
+// Vérifie si le joueur a gagné
+bool check_win(grid* g) {
+  for (int i = 0; i < GRID_SIZE; i++) {
+    if (get_cell_value(g, i) == 2048) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool check_lose(grid* g) {
+  if (number_of_empty_cells(g) > 0) {
+    return false;
+  }
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 3; j++) {
+      // Vérifier les lignes
+      if (get_cell_value(g, i * 4 + j) == get_cell_value(g, i * 4 + (j + 1))) {
+        return false;
+      }
+      // Vérifier les colonnes
+      if (get_cell_value(g, j * 4 + i) == get_cell_value(g, (j + 1) * 4 + i)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+game_state check_game_state(grid* g) {
+    if (check_win(g)) {
+        return WIN;
+    } else if (check_lose(g)) {
+        return LOSE;
+    } else {
+        return ONGOING;
+    }
 }

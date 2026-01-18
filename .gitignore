@@ -73,3 +73,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 *.dwo
+
+bin

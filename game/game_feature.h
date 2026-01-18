@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -13,36 +15,39 @@
 
 #define GRID_SIZE 16
 
+typedef struct grid {
+    uint16_t cells[GRID_SIZE];
+    int score;
+} grid;
+
 // enum pour les différentes directions
 typedef enum directions { 
     Up = 0, Right, Down, Left
 } directions;
 
-// init
-void init_grid(uint16_t** grid);
+typedef enum game_state {
+    WIN,
+    LOSE,
+    ONGOING
+} game_state;
 
-// desinit
-void desinit_grid(uint16_t** grid);
-
-int get_cell_value(uint16_t* grid, int cell);
-void set_cell_value(uint16_t* grid, int cell, int value);
+int get_cell_value(grid* g, int cell);
+void set_cell_value(grid* g, int cell, int value);
 
 // recherche des cases vides
 // retourne le nombre de cellules vides
-int number_of_empty_cells(uint16_t* grid);
-
+int number_of_empty_cells(grid* g);
 // ajout d'une nouvelle case
-void add_random_cell(uint16_t* grid);
+bool add_random_cell(grid* g);
 
-// décalage d'une case
-void move_cell_up(uint16_t* grid, int cell);
-void move_cell_right(uint16_t* grid, int cell);
-void move_cell_down(uint16_t* grid, int cell);
-void move_cell_left(uint16_t* grid, int cell);
-void move_cell(uint16_t* grid, int cell, enum directions dir);
-
-// fusion de 2 cases
-void merge_cells(uint16_t* grid, int cella, int cellb);
+// Compacte une ligne ou une colonne en fonction de la direction du déplacement
+int compact_line(uint16_t* line);
 
 // décaler toutes les cases
-void move_all(uint16_t* grid, enum directions dir);
+void move_all(grid* g, directions dir);
+// Vérifie si le joueur a gagné
+bool check_win(grid* g);
+
+bool check_lose(grid* g);
+
+game_state check_game_state(grid* g);

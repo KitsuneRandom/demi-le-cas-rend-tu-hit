@@ -35,8 +35,8 @@ void print_last_line() {
 }
 
 // Affiche le nombre de la bonne couleur
-void print_number(const uint16_t * n) {
-    switch (*n) {
+void print_number(const uint16_t n) {
+    switch (n) {
         case 0:
             printf("        ");
             break;
@@ -74,7 +74,7 @@ void print_number(const uint16_t * n) {
             printf(ROUGE "  2048  " ANSI_RESET);
             break;
         default:
-            printf("WHATTT");
+            printf(" WHATTT ");
             break;
     }
 }
@@ -83,7 +83,7 @@ void print_number(const uint16_t * n) {
 void print_grid(const uint16_t *grid) {
     print_first_line();
     for (int i = 0; i < 16; i++) {
-        print_number(&grid[i]);
+        print_number(grid[i]);
         print_separator(i % 4 == 3 && i != 15);
     }
     print_last_line();
