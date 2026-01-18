@@ -8,9 +8,9 @@ Mathis DE AZEVEDO - Abel GOMES - Lucie TRIPIER
 ## Difficultés rencontrées 
 <br>
 Vacancesssss      <-- Lucie en craquage mental<br>
-Fonctions de jeu :
-- Gestion des index de la grille (grille 1D)
-- Découpage des fonctions pour concorder avec les besoins des différents threads (score, affichage, déplacements, ...) -> pas tout gérer en 1 fonction
+Fonctions de jeu :<br>
+- Gestion des index de la grille (grille 1D)<br>
+- Découpage des fonctions pour concorder avec les besoins des différents threads (score, affichage, déplacements, ...) -> pas tout gérer en 1 fonction<br>
 <br>
 
 ## Répartition des tâches
@@ -23,16 +23,16 @@ Mathis DE AZEVEDO : Fonctions de jeu, interactions avec l'utilisateur README + r
 
 ## "Fonctionnalités qui marchent"
 <br>
-Fonctions de jeu :
-- Ajouter une nouvelle case à un emplacement aléatoire
-- Déplacer + fusionner les cases dans une direction
-- Vérifier la fin du jeu (gagné/perdu)
+Fonctions de jeu :<br>
+- Ajouter une nouvelle case à un emplacement aléatoire<br>
+- Déplacer + fusionner les cases dans une direction<br>
+- Vérifier la fin du jeu (gagné/perdu)<br>
 <br>
-Affichage :
-- Afficher l'entièreté de la grille avec une jolie interface
-- Afficher chaque nombre avec une couleur prédéterminée
+Affichage :<br>
+- Afficher l'entièreté de la grille avec une jolie interface<br>
+- Afficher chaque nombre avec une couleur prédéterminée<br>
 <br>
 
 ## "Fonctionnalités qui marchent pas"
 <br>
-Euh jsp hacker la NASA ?
+Euh jsp hacker la NASA ?<br>
