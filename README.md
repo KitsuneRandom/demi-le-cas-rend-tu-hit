@@ -1,7 +1,11 @@
 # demi le cas rend tu Hit
 
 ## Description
-Jeu 2048 jouable sur terminal. bougez les tuiles avec zqsd et le jeu ne peut atteindre que la tuile 2048. a la fin du jeu (plus de place ou tuile 2048 crée), le jeu affichera votre score, calculé en fonction des tuiles que vous avez assemblées. 
+Jeu 2048 jouable sur terminal. bougez les tuiles avec zqsd jusqu'à atteindre la tuile 2048. a la fin du jeu (plus de place ou tuile 2048 crée), le jeu affichera votre score, calculé en fonction des tuiles que vous avez assemblées.
+
+## Jeu
+![Le jeu](image.webp)
+Le but de ce projet est de recréer le célèbre jeu 2048 dans le langage C en utilisant des processus différents communiquant entre eux pour réaliser les différentes fonction de jeu.
 
 ## installation et lancement
 ```bash
@@ -15,6 +19,11 @@ $ cd bin/
 
 $ ./demi_le_cas 
 ```
+
+## Contributions
+Abel GOMES : Communication entre les processus, déroulement de la partie
+Lucie TRIPIER : Fonctions de jeu, affichage
+Mathis DE AZEVEDO : Fonctions de jeu, interactions avec l'utilisateur
 
 ## License
 MIT License
