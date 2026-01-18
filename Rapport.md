@@ -7,17 +7,18 @@ Mathis DE AZEVEDO - Abel GOMES - Lucie TRIPIER
 
 ## Difficultés rencontrées 
 <br>
-Vacancesssss      <-- Lucie en craquage mental<br>
 Fonctions de jeu :<br>
 - Gestion des index de la grille (grille 1D)<br>
 - Découpage des fonctions pour concorder avec les besoins des différents threads (score, affichage, déplacements, ...) -> pas tout gérer en 1 fonction<br>
+- ne pas se taper dessus quand on codait, car vu qu'on ne devait pas faire les mêmes trucs chacun de son côté, il fallait qu'on se coordonne pour ne pas faire les mêmes choses en même temps et bien préciser qui faisait quoi (sinan les git merge on aurait pleuré). <br>
+- abscence d'un coéquipier a la fin (Lucie, problèmes perso) 
 <br>
 
 ## Répartition des tâches
 <br>
 Abel GOMES : Communication entre les processus, déroulement de la partie<br>
-Lucie TRIPIER : Fonctions de jeu, affichage, README + rapport<br>
-Mathis DE AZEVEDO : Fonctions de jeu, interactions avec l'utilisateur README + rapport<br>
+Lucie TRIPIER : Fonctions de jeu, affichage en couleurs, README + rapport<br>
+Mathis DE AZEVEDO : Fonctions de jeu, affichage de base, interactions avec l'utilisateur, README + rapport<br>
 
 
 
