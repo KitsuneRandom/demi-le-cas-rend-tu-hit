@@ -11,6 +11,8 @@ $ cd demi-le-cas-rend-tu-hit/
 
 $ make
 
+$ cd bin/
+
 $ ./demi_le_cas 
 ```
 
