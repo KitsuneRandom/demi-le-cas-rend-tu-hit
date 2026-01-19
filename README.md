@@ -15,6 +15,8 @@ $ git clone git@git.unistra.fr:m.deazevedo/demi-le-cas-rend-tu-hit.git
 
 $ cd demi-le-cas-rend-tu-hit/
 
+$ make fclean
+
 $ make
 
 $ cd bin/
@@ -24,9 +26,12 @@ $ ./demi_le_cas
 <br>
 
 ## Contributions
-Abel GOMES : Communication entre les processus, déroulement de la partie<br>
-Lucie TRIPIER : Fonctions de jeu, affichage<br>
-Mathis DE AZEVEDO : Fonctions de jeu, interactions avec l'utilisateur<br>
+Abel GOMES : Communication entre les processus, déroulement de la partie
+
+Lucie TRIPIER : Fonctions de jeu, affichage en couleurs, README + rapport
+
+Mathis DE AZEVEDO : Fonctions de jeu, fonctions d'affichage, interactions avec l'utilisateur README + rapport
+
 
 ## License
 MIT License<br>

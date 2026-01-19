@@ -12,6 +12,7 @@ Fonctions de jeu :<br>
 - Découpage des fonctions pour concorder avec les besoins des différents threads (score, affichage, déplacements, ...) -> pas tout gérer en 1 fonction<br>
 - ne pas se taper dessus quand on codait, car vu qu'on ne devait pas faire les mêmes trucs chacun de son côté, il fallait qu'on se coordonne pour ne pas faire les mêmes choses en même temps et bien préciser qui faisait quoi (sinan les git merge on aurait pleuré). <br>
 - abscence d'un coéquipier a la fin (Lucie, problèmes perso) 
+- découverte d'un bug après qu'on avait tout fini et rendu en avance
 <br>
 
 ## Répartition des tâches
@@ -36,4 +37,5 @@ Affichage :<br>
 
 ## "Fonctionnalités qui marchent pas"
 <br>
-Euh jsp hacker la NASA ?<br>
+En Bonus on aurait pu faire une commande pour rejouer quand on a gagné ou perdu (j'ai perdu). <br>
+mettre un rickroll en ASCII quand on perd ? 
