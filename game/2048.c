@@ -189,10 +189,8 @@ void* thread_main(void* arg) {
                     break;
             }
             sigwait(&set, &signum);
-            if (signum != SIGRTMIN + 9) {
-                kill(display_pid, SIGRTMIN + 7);
-                sigwait(&set, &signum);
-            }
+            kill(display_pid, SIGRTMIN + 7);
+            sigwait(&set, &signum);
         }
     }
     
