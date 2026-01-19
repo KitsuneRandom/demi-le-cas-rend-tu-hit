@@ -14,14 +14,18 @@
 #include "game/game_feature.h"
 
 bool run = false;
+pid_t child_pid;
 
 char ask_user_input(void) {
     char input;
-    char is_ok = false;
+    bool is_ok = false;
     char c;
-    while (is_ok != true) {
+    while (is_ok != true && run) {
         printf("Entrez z (haut), q (gauche), s (bas) ou d (droite) : ");
-        scanf(" %c", &input);
+        if (scanf(" %c", &input) != 1) {
+            if (!run) return 0;
+            continue;
+        }
         
         while ((c = getchar()) != '\n' && c != EOF); // Vider le reste de la saisie de l'utilisateur après le premier caractère lu
         
@@ -31,7 +35,6 @@ char ask_user_input(void) {
             is_ok = true;
         }
     }
-    printf("user input : %c\n", input);
     return input;
 }
 
@@ -47,18 +50,27 @@ directions ask_user_dir(void) {
         case 'd' :
             return Right;
         default :
-            return Up;
+            return -1;
     }
 }
 
-void end_game() {run = false;}
+void end_game() {
+    run = false;
+    kill(child_pid, SIGRTMIN + 9);
+    kill(getpid(), SIGRTMIN + 9);
+}
 
 int main() {
     system("clear");
-    if (fork()) {
+    child_pid = fork();
+    if (child_pid) {
         // parent
-
         run = true;
+
+        struct sigaction sa;
+        sa.sa_handler = end_game;
+        sa.sa_flags = 0;
+        sigaction(SIGINT, &sa, NULL);
 
         sigset_t set;
         sigemptyset(&set);
@@ -69,12 +81,14 @@ int main() {
         // parent
         int main_to_main = mkfifo("main_to_main", 0666);
         if (main_to_main == -1) {
+            end_game();
             perror("mkfifo main_to_main");
             exit(EXIT_FAILURE);
         }
 
         int o = open("main_to_main", O_WRONLY);
         if (o == -1) {
+            end_game();
             perror("open main_to_main");
             exit(EXIT_FAILURE);
         }
@@ -82,6 +96,7 @@ int main() {
         pid_t pid = getpid();
         ssize_t bytes_written = write(o, &pid, sizeof(pid));
         if (bytes_written == -1) {
+            end_game();
             perror("write pid to main_to_main");
             exit(EXIT_FAILURE);
         }
@@ -95,6 +110,7 @@ int main() {
                 directions direction = ask_user_dir();
                 ssize_t bytes_written = write(o, &direction, sizeof(direction));
                 if (bytes_written == -1) {
+                    end_game();
                     perror("write direction to main_to_main");
                     exit(EXIT_FAILURE);
                 }
