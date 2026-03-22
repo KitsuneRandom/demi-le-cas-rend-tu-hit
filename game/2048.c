@@ -25,7 +25,7 @@ void* thread_move_score(void* arg) {
     sigset_t set;
     sigemptyset(&set);
 
-    for (int i = 1; i <= 4; i++) sigaddset(&set, SIGRTMIN + i);
+    for (int i = SIGRTMIN + 1; i <= SIGRTMIN + 4; i++) sigaddset(&set, i);
     sigaddset(&set, SIGRTMIN + 9);
 
     int signum;
@@ -45,7 +45,7 @@ void* thread_move_score(void* arg) {
             }
             add_random_cell(&g);
 
-            kill(self_pid, SIGRTMIN + 5);
+            pthread_kill(goal, SIGRTMIN);
         }
     }
 
@@ -68,7 +68,8 @@ void* thread_goal(void* arg) {
 
         sigset_t set;
         sigemptyset(&set);
-        sigaddset(&set, SIGRTMIN + 5);
+        sigaddset(&set, SIGRTMIN);
+        sigaddset(&set, SIGRTMIN + 9);
 
         int signum;
 
@@ -82,7 +83,7 @@ void* thread_goal(void* arg) {
             write(pipefd[1], &g, sizeof(grid));
             if (signum == SIGRTMIN + 9) state = LOSE;
             write(pipefd[1], &state, sizeof(game_state));
-            kill(self_pid, SIGRTMIN + 6);
+            pthread_kill(main_thread, SIGRTMIN);
 
             if (state != ONGOING) end_game();
         }
@@ -99,11 +100,11 @@ void* thread_goal(void* arg) {
         read(pipefd[0], &received_grid, sizeof(grid));
         printf("Score : %d\n\n", received_grid.score);
         print_grid(received_grid.cells);
-        kill(self_pid, SIGRTMIN + 8);
+        pthread_kill(main_thread, SIGRTMIN);
 
         sigset_t set;
         sigemptyset(&set);
-        sigaddset(&set, SIGRTMIN + 7);
+        sigaddset(&set, SIGRTMIN);
 
         int signum;
 
@@ -121,7 +122,7 @@ void* thread_goal(void* arg) {
             else if (state == LOSE) printf("Dommage ! Vous avez perdu !\n");
             
             if (state != ONGOING) end_game(); // child and parent don't share run variable
-            else kill(self_pid, SIGRTMIN + 8);
+            else pthread_kill(main_thread, SIGRTMIN);
         }
         close(pipefd[0]);
         exit(EXIT_SUCCESS);
@@ -149,8 +150,7 @@ void* thread_main(void* arg) {
 
     sigset_t set;
     sigemptyset(&set);
-    sigaddset(&set, SIGRTMIN + 6);
-    sigaddset(&set, SIGRTMIN + 8);
+    sigaddset(&set, SIGRTMIN);
     sigaddset(&set, SIGRTMIN + 9);
     
     int signum;
@@ -170,26 +170,26 @@ void* thread_main(void* arg) {
             switch (direction) {
                 case Up :
                     // Move Up
-                    kill(self_pid, SIGRTMIN + 1);
+                    pthread_kill(move_score, SIGRTMIN + 1);
                     break;
                 case Left :
                     // Move Left
-                    kill(self_pid, SIGRTMIN + 2);
+                    pthread_kill(move_score, SIGRTMIN + 2);
                     break;
                 case Down :
                     // Move Down
-                    kill(self_pid, SIGRTMIN + 3);
+                    pthread_kill(move_score, SIGRTMIN + 3);
                     break;
                 case Right :
                     // Move Right
-                    kill(self_pid, SIGRTMIN + 4);
+                    pthread_kill(move_score, SIGRTMIN + 4);
                     break;
                 default :
                     end_game();
                     break;
             }
             sigwait(&set, &signum);
-            kill(display_pid, SIGRTMIN + 7);
+            pthread_kill(goal, SIGRTMIN);
             sigwait(&set, &signum);
         }
     }
@@ -208,7 +208,8 @@ int main() {
 
     sigset_t mask;
     sigemptyset(&mask);
-    for (int i = SIGRTMIN; i <= SIGRTMIN + 9; i++) sigaddset(&mask, i);
+    for (int i = SIGRTMIN; i <= SIGRTMIN + 4; i++) sigaddset(&mask, i);
+    sigaddset(&mask, SIGRTMIN + 9);
     sigprocmask(SIG_BLOCK, &mask, NULL);
 
     g = (grid){0};
