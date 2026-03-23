@@ -100,7 +100,7 @@ void* thread_goal(void* arg) {
         read(pipefd[0], &received_grid, sizeof(grid));
         printf("Score : %d\n\n", received_grid.score);
         print_grid(received_grid.cells);
-        pthread_kill(main_thread, SIGRTMIN);
+        kill(self_pid, SIGRTMIN + 5);
 
         sigset_t set;
         sigemptyset(&set);
@@ -122,7 +122,7 @@ void* thread_goal(void* arg) {
             else if (state == LOSE) printf("Dommage ! Vous avez perdu !\n");
             
             if (state != ONGOING) end_game(); // child and parent don't share run variable
-            else pthread_kill(main_thread, SIGRTMIN);
+            else kill(self_pid, SIGRTMIN + 5);
         }
         close(pipefd[0]);
         exit(EXIT_SUCCESS);
@@ -151,6 +151,7 @@ void* thread_main(void* arg) {
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGRTMIN);
+    sigaddset(&set, SIGRTMIN + 5);
     sigaddset(&set, SIGRTMIN + 9);
     
     int signum;
@@ -189,8 +190,10 @@ void* thread_main(void* arg) {
                     break;
             }
             sigwait(&set, &signum);
-            pthread_kill(goal, SIGRTMIN);
-            sigwait(&set, &signum);
+            if (signum != SIGRTMIN + 9) {
+                kill(display_pid, SIGRTMIN);
+                sigwait(&set, &signum);
+            }
         }
     }
     
@@ -208,7 +211,7 @@ int main() {
 
     sigset_t mask;
     sigemptyset(&mask);
-    for (int i = SIGRTMIN; i <= SIGRTMIN + 4; i++) sigaddset(&mask, i);
+    for (int i = SIGRTMIN; i <= SIGRTMIN + 5; i++) sigaddset(&mask, i);
     sigaddset(&mask, SIGRTMIN + 9);
     sigprocmask(SIG_BLOCK, &mask, NULL);
 
