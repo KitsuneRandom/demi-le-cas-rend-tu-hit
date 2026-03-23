@@ -1,13 +1,11 @@
 #define _POSIX_C_SOURCE 200112L
-
 #include "2048.h"
 #include "../display/display.h"
 
-game games[MAX_GAMES];   // tableau de parties
-int game_count = 0;      // compteur de parties
-
+grid g;
 pid_t self_pid;
 pid_t display_pid;
+pid_t main_pid;
 
 pthread_t move_score;
 pthread_t goal;
@@ -15,31 +13,15 @@ pthread_t main_thread;
 
 bool run = false;
 
-// Fonction pour retrouver la partie associée à un main
-int find_game(pid_t pid) {
-    for (int i = 0; i < game_count; i++) {
-        if (games[i].main_pid == pid)
-            return i;
-    }
-    return -1;
-}
-
 void end_game() {
     run = false;
-    for (int i = 0; i < game_count; i++) {
-        kill(games[i].main_pid, SIGRTMIN + 9);      // signal de fin de partie pour tous les mains actifs
-    }
+    kill(main_pid, SIGRTMIN + 9);
     pthread_kill(move_score, SIGRTMIN + 9);
     pthread_kill(goal, SIGRTMIN + 9);
     pthread_kill(main_thread, SIGRTMIN + 9);
-    unlink("main_to_main"); // le fifo est supprimé par 2048
 }
 
 void* thread_move_score(void* arg) {
-    int id = *(int*)arg;
-    free(arg);
-    arg = NULL;
-
     sigset_t set;
     sigemptyset(&set);
 
@@ -51,16 +33,17 @@ void* thread_move_score(void* arg) {
     while (run) {
         sigwait(&set, &signum);
 
-        // Cette version simplifiée suppose qu'une seule partie est manipulée à la fois, ce qui ne posera plus problème après la mise en place de mutex
-        if (signum == SIGRTMIN + 1)
-            move_all(&games[id].g, Up);
-        if (signum == SIGRTMIN + 2)
-            move_all(&games[id].g, Left);
-        if (signum == SIGRTMIN + 3)
-            move_all(&games[id].g, Down);
-        if (signum == SIGRTMIN + 4)
-            move_all(&games[id].g, Right);
-        add_random_cell(&games[id].g);
+        if (signum != SIGRTMIN + 9) {
+            if (signum == SIGRTMIN + 1) {
+                move_all(&g, Up);
+            } else if (signum == SIGRTMIN + 2) {
+                move_all(&g, Left);
+            } else if (signum == SIGRTMIN + 3) {
+                move_all(&g, Down);
+            } else if (signum == SIGRTMIN + 4) {
+                move_all(&g, Right);
+            }
+            add_random_cell(&g);
 
             pthread_kill(goal, SIGRTMIN);
         }
@@ -70,10 +53,6 @@ void* thread_move_score(void* arg) {
 }
 
 void* thread_goal(void* arg) {
-    int id = *(int*)arg;
-    free(arg);
-    arg = NULL;
-
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         perror("pipe");
@@ -85,6 +64,7 @@ void* thread_goal(void* arg) {
     if (display_pid) {
         // parent
         close(pipefd[0]);
+        write(pipefd[1], &g, sizeof(grid));
 
         sigset_t set;
         sigemptyset(&set);
@@ -98,9 +78,9 @@ void* thread_goal(void* arg) {
         while (run) {
             sigwait(&set, &signum);
 
-            state = check_game_state(&games[id].g);
+            state = check_game_state(&g);
 
-            write(pipefd[1], &games[id].g, sizeof(grid));
+            write(pipefd[1], &g, sizeof(grid));
             if (signum == SIGRTMIN + 9) state = LOSE;
             write(pipefd[1], &state, sizeof(game_state));
             pthread_kill(main_thread, SIGRTMIN);
@@ -110,7 +90,6 @@ void* thread_goal(void* arg) {
         close(pipefd[1]);
         wait(NULL);
     }
-
     else {
         // child
         close(pipefd[1]);
@@ -153,11 +132,19 @@ void* thread_goal(void* arg) {
 }
 
 void* thread_main(void* arg) {
+    pthread_create(&move_score, NULL, thread_move_score, NULL);
+    pthread_create(&goal, NULL, thread_goal, NULL);
 
     int o = open("main_to_main", O_RDONLY);
     if (o == -1) {
         end_game();
         perror("open main_to_main");
+        exit(EXIT_FAILURE);
+    }
+    ssize_t bytes_read = read(o, &main_pid, sizeof(main_pid));
+    if (bytes_read == -1) {
+        end_game();
+        perror("read pid from main_to_main");
         exit(EXIT_FAILURE);
     }
 
@@ -167,66 +154,46 @@ void* thread_main(void* arg) {
     sigaddset(&set, SIGRTMIN + 9);
     
     int signum;
+    
+    directions direction;
 
     sigwait(&set, &signum);
 
-    message msg;
-
     while (run) {
         if (signum != SIGRTMIN + 9) {
-            read(o, &msg, sizeof(msg));
-            if (msg.new_game) {
-                // création d'une nouvelle partie si on reçoit un message de création de partie (avec les threads associés)
-                games[game_count].main_pid = msg.pid;
-                games[game_count].g = (grid){0};
-
-                add_random_cell(&games[game_count].g);
-
-                int *arg = malloc(sizeof(int));
-                *arg = game_count;
-                pthread_create(&games[game_count].move_score_thread,
-                            NULL,
-                            thread_move_score,
-                            arg);
-                pthread_create(&games[game_count].goal_thread,
-                            NULL,
-                            thread_goal,
-                            arg);
-                game_count++;
-            } else {
-                // sinon, on traite le message avec la direction
-                int id = find_game(msg.pid);
-                if (id == -1)
-                    continue;
-
-                switch (msg.dir) {
-                    case Up :
-                        // Move Up
-                        kill(self_pid, SIGRTMIN + 1);
-                        break;
-                    case Left :
-                        // Move Left
-                        kill(self_pid, SIGRTMIN + 2);
-                        break;
-                    case Down :
-                        // Move Down
-                        kill(self_pid, SIGRTMIN + 3);
-                        break;
-                    case Right :
-                        // Move Right
-                        kill(self_pid, SIGRTMIN + 4);
-                        break;
-                    default :
-                        end_game();
-                        break;
-                }
-                sigwait(&set, &signum);
-                kill(display_pid, SIGRTMIN + 7);
-                sigwait(&set, &signum);
+            kill(main_pid, SIGRTMIN);
+            if (read(o, &direction, sizeof(direction)) == -1) {
+                end_game();
+                perror("read direction from main_to_main");
+                exit(EXIT_FAILURE);
             }
+            switch (direction) {
+                case Up :
+                    // Move Up
+                    pthread_kill(move_score, SIGRTMIN + 1);
+                    break;
+                case Left :
+                    // Move Left
+                    pthread_kill(move_score, SIGRTMIN + 2);
+                    break;
+                case Down :
+                    // Move Down
+                    pthread_kill(move_score, SIGRTMIN + 3);
+                    break;
+                case Right :
+                    // Move Right
+                    pthread_kill(move_score, SIGRTMIN + 4);
+                    break;
+                default :
+                    end_game();
+                    break;
+            }
+            sigwait(&set, &signum);
+            pthread_kill(goal, SIGRTMIN);
+            sigwait(&set, &signum);
         }
     }
-
+    
     pthread_join(move_score, NULL);
     pthread_join(goal, NULL);
 
@@ -244,6 +211,9 @@ int main() {
     for (int i = SIGRTMIN; i <= SIGRTMIN + 4; i++) sigaddset(&mask, i);
     sigaddset(&mask, SIGRTMIN + 9);
     sigprocmask(SIG_BLOCK, &mask, NULL);
+
+    g = (grid){0};
+    add_random_cell(&g);
 
     self_pid = getpid();
 

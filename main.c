@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200112L
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -9,15 +8,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-<<<<<<< f42c6ed218c09604b79070669a55be03505ddcdf
 #include <unistd.h>
-=======
-#include <errno.h>
-
-#include "display.h"
->>>>>>> 649a37b670daa5a2eba47a8376dd58dc6b55df7a
 #include "game/game_feature.h"
-#include "game/2048.h"
 
 bool run = false;
 pid_t child_pid;
@@ -32,11 +24,11 @@ char ask_user_input(void) {
             if (!run) return 0;
             continue;
         }
-
+        
         while ((c = getchar()) != '\n' && c != EOF); // Vider le reste de la saisie de l'utilisateur après le premier caractère lu
-
+        
         if (input != 'z' && input != 'q' && input != 's' && input != 'd') {
-            printf("Valeur invalide.\n");
+            printf("valeur saisie invalide.\n");
         } else {
             is_ok = true;
         }
@@ -64,7 +56,6 @@ void end_game() {
     run = false;
     kill(child_pid, SIGRTMIN + 9);
     kill(getpid(), SIGRTMIN + 9);
-    unlink("main_to_main");
 }
 
 int main() {
@@ -85,45 +76,40 @@ int main() {
         sigaddset(&set, SIGRTMIN + 9);
         sigprocmask(SIG_BLOCK, &set, NULL);
 
-        if (mkfifo("main_to_main", 0666) == -1 && errno != EEXIST) {
-            perror("mkfifo");
+        // parent
+        int main_to_main = mkfifo("main_to_main", 0666);
+        if (main_to_main == -1) {
+            end_game();
+            perror("mkfifo main_to_main");
             exit(EXIT_FAILURE);
         }
 
         int o = open("main_to_main", O_WRONLY);
-
         if (o == -1) {
-            perror("open fifo");
+            end_game();
+            perror("open main_to_main");
             exit(EXIT_FAILURE);
         }
 
-
-        // envoi d'un message avec la structure message
-        message msg;
-        msg.pid = getpid();
-        msg.new_game = true;
-        ssize_t bytes_written = write(o, &msg, sizeof(msg));
+        pid_t pid = getpid();
+        ssize_t bytes_written = write(o, &pid, sizeof(pid));
         if (bytes_written == -1) {
             end_game();
-            perror("write new_game to main_to_main");
+            perror("write pid to main_to_main");
             exit(EXIT_FAILURE);
         }
         printf("Bienvenue dans ce super 2048 (super jsp mais en tt cas 2048)\nLe but du jeu c'est de pas perdre le jeu, et pour ça il faut éviter de remplir la grille\nVous allez donc devoir fusionner les cases de même valeur jusqu'à obtenir une case 2048\nVous utiliserez z, q, s, et d pour vous déplpacer en haut, à gauche, en bas et à droite\nVous pouvez quitter a tout moment avec ctrl-c (promis, l'arret est clean)\n");
-
+        
         int signum;
 
         while (run) {
             sigwait(&set, &signum);
             if (signum != SIGRTMIN + 9) {
-                // envoi d'un message avec la structure message
-                message msg;
-                msg.pid = getpid();
-                msg.dir = ask_user_dir();
-                msg.new_game = false;
-                bytes_written = write(o, &msg, sizeof(msg));
+                directions direction = ask_user_dir();
+                ssize_t bytes_written = write(o, &direction, sizeof(direction));
                 if (bytes_written == -1) {
                     end_game();
-                    perror("write dir to main_to_main");
+                    perror("write direction to main_to_main");
                     exit(EXIT_FAILURE);
                 }
             }
@@ -134,14 +120,13 @@ int main() {
 
         close(o);
         wait(NULL);
-        // La suppression du FIFO se fait dans 2048.c à la fin de la partie sinon les autres main plantent
+        remove("main_to_main");
     }
-
     else {
         // child
         execv("./game/2048", (char*[]){"./game/2048", NULL});
     }
 
     exit(EXIT_SUCCESS);
-    
+
 }
