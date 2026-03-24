@@ -9,7 +9,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
+
 #include "game/game_feature.h"
+#include "game/2048.h"
 
 bool run = false;
 pid_t child_pid;
@@ -78,7 +81,7 @@ int main() {
 
         // parent
         int main_to_main = mkfifo("main_to_main", 0666);
-        if (main_to_main == -1) {
+        if (main_to_main == -1 && errno != EEXIST) {
             end_game();
             perror("mkfifo main_to_main");
             exit(EXIT_FAILURE);
@@ -91,11 +94,14 @@ int main() {
             exit(EXIT_FAILURE);
         }
 
-        pid_t pid = getpid();
-        ssize_t bytes_written = write(o, &pid, sizeof(pid));
+        msg info_new_game;
+        info_new_game.pid = getpid();
+        info_new_game.new_game = true;
+        info_new_game.dir = -1;
+        ssize_t bytes_written = write(o, &info_new_game, sizeof(msg));
         if (bytes_written == -1) {
             end_game();
-            perror("write pid to main_to_main");
+            perror("write info_new_game to main_to_main");
             exit(EXIT_FAILURE);
         }
         printf("Bienvenue dans ce super 2048 (super jsp mais en tt cas 2048)\nLe but du jeu c'est de pas perdre le jeu, et pour ça il faut éviter de remplir la grille\nVous allez donc devoir fusionner les cases de même valeur jusqu'à obtenir une case 2048\nVous utiliserez z, q, s, et d pour vous déplpacer en haut, à gauche, en bas et à droite\nVous pouvez quitter a tout moment avec ctrl-c (promis, l'arret est clean)\n");
@@ -105,8 +111,11 @@ int main() {
         while (run) {
             sigwait(&set, &signum);
             if (signum != SIGRTMIN + 9) {
-                directions direction = ask_user_dir();
-                ssize_t bytes_written = write(o, &direction, sizeof(direction));
+                msg msg_direction;
+                msg_direction.pid = getpid();
+                msg_direction.new_game = false;
+                msg_direction.dir = ask_user_dir();
+                ssize_t bytes_written = write(o, &msg_direction, sizeof(msg));
                 if (bytes_written == -1) {
                     end_game();
                     perror("write direction to main_to_main");
