@@ -12,7 +12,6 @@
 #include <errno.h>
 
 #include "game/game_feature.h"
-#include "game/2048.h"
 
 bool run = false;
 pid_t child_pid;
@@ -51,91 +50,57 @@ directions ask_user_dir(void) {
         case 'd' :
             return Right;
         default :
-            return -1;
+            return WRONG;
     }
 }
 
-void end_game() {
-    run = false;
-    kill(child_pid, SIGRTMIN + 9);
-    kill(getpid(), SIGRTMIN + 9);
-}
 
 int main() {
-    system("clear");
-    child_pid = fork();
-    if (child_pid) {
-        // parent
-        run = true;
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGRTMIN);
+    sigaddset(&set, SIGRTMIN + 9);
+    sigprocmask(SIG_BLOCK, &set, NULL);
 
-        struct sigaction sa;
-        sa.sa_handler = end_game;
-        sa.sa_flags = 0;
-        sigaction(SIGINT, &sa, NULL);
 
-        sigset_t set;
-        sigemptyset(&set);
-        sigaddset(&set, SIGRTMIN);
-        sigaddset(&set, SIGRTMIN + 9);
-        sigprocmask(SIG_BLOCK, &set, NULL);
+    msg m;
+    m.pid = getpid();
+    m.tty = ttyname(STDIN_FILENO);
+    m.new_game = true;
+    m.dir = -1;
 
-        // parent
-        int main_to_main = mkfifo("main_to_main", 0666);
-        if (main_to_main == -1 && errno != EEXIST) {
-            end_game();
-            perror("mkfifo main_to_main");
-            exit(EXIT_FAILURE);
-        }
+    int o = open("main_to_main", O_WRONLY);
+    if (o == -1) {
+        perror("open main_to_main");
+        exit(EXIT_FAILURE);
+    }
 
-        int o = open("main_to_main", O_WRONLY);
-        if (o == -1) {
-            end_game();
-            perror("open main_to_main");
-            exit(EXIT_FAILURE);
-        }
+    ssize_t bytes_written = write(o, &m, sizeof(msg));
+    if (bytes_written == -1) {
+        perror("write pid to main_to_main");
+        exit(EXIT_FAILURE);
+    }
 
-        msg info_new_game;
-        info_new_game.pid = getpid();
-        info_new_game.new_game = true;
-        info_new_game.dir = -1;
-        ssize_t bytes_written = write(o, &info_new_game, sizeof(msg));
-        if (bytes_written == -1) {
-            end_game();
-            perror("write info_new_game to main_to_main");
-            exit(EXIT_FAILURE);
-        }
-        printf("Bienvenue dans ce super 2048 (super jsp mais en tt cas 2048)\nLe but du jeu c'est de pas perdre le jeu, et pour ça il faut éviter de remplir la grille\nVous allez donc devoir fusionner les cases de même valeur jusqu'à obtenir une case 2048\nVous utiliserez z, q, s, et d pour vous déplpacer en haut, à gauche, en bas et à droite\nVous pouvez quitter a tout moment avec ctrl-c (promis, l'arret est clean)\n");
-        
-        int signum;
+    run = true;
 
-        while (run) {
-            sigwait(&set, &signum);
-            if (signum != SIGRTMIN + 9) {
-                msg msg_direction;
-                msg_direction.pid = getpid();
-                msg_direction.new_game = false;
-                msg_direction.dir = ask_user_dir();
-                ssize_t bytes_written = write(o, &msg_direction, sizeof(msg));
+    int signum;
+
+    while (run) {
+        sigwait(&set, &signum);
+        if (signum == SIGRTMIN) {
+            m.new_game = false;
+            m.dir = ask_user_dir();
+            if (m.dir != WRONG) {
+                ssize_t bytes_written = write(o, &m, sizeof(msg));
                 if (bytes_written == -1) {
-                    end_game();
-                    perror("write direction to main_to_main");
+                    perror("write move to main_to_main");
                     exit(EXIT_FAILURE);
                 }
             }
-            else {
-                end_game();
-            }
+        } else if (signum == SIGRTMIN + 9) {
+            run = false;
         }
-
-        close(o);
-        wait(NULL);
-        remove("main_to_main");
     }
-    else {
-        // child
-        execv("./game/2048", (char*[]){"./game/2048", NULL});
-    }
-
+    
     exit(EXIT_SUCCESS);
-
 }

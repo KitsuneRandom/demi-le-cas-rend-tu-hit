@@ -22,14 +22,28 @@ typedef struct grid {
 
 // enum pour les différentes directions
 typedef enum directions { 
-    Up = 0, Right, Down, Left
+    Up = 0, Right, Down, Left, WRONG
 } directions;
+
+typedef struct msg {
+    pid_t pid;
+    char* tty;
+    bool new_game;
+    directions dir;
+} msg;
 
 typedef enum game_state {
     WIN,
     LOSE,
     ONGOING
 } game_state;
+
+typedef struct display_msg {
+    grid grid;
+    game_state state;
+    char* tty;
+} display_msg;
+
 
 int get_cell_value(grid* g, int cell);
 void set_cell_value(grid* g, int cell, int value);
