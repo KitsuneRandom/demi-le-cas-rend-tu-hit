@@ -1,6 +1,6 @@
 # ===== CONFIG =====
 CC      = gcc
-CFLAGS  = -Wall -Wextra -Werror -Wno-unused-parameter -std=c11 -pthread
+CFLAGS  = -Wall -Wextra -Werror -Wno-unused-parameter -pthread
 INCLUDES = -Idisplay -Iutils
 TARGET  = bin/demi_le_cas bin/2048
 

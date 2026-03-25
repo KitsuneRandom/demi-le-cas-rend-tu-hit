@@ -27,21 +27,23 @@ typedef enum directions {
 
 typedef struct msg {
     pid_t pid;
-    char* tty;
+    char tty[128];
     bool new_game;
+    bool run;
     directions dir;
 } msg;
 
 typedef enum game_state {
     WIN,
     LOSE,
-    ONGOING
+    ONGOING,
+    DEAD
 } game_state;
 
 typedef struct display_msg {
     grid grid;
     game_state state;
-    char* tty;
+    char tty[128];
 } display_msg;
 
 

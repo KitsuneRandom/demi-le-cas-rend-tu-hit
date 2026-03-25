@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200112L
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -9,21 +10,21 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
+#include <string.h>
 
 #include "game/game_feature.h"
 
-bool run = false;
-pid_t child_pid;
+int o = -1;
+msg m;
 
 char ask_user_input(void) {
     char input;
     bool is_ok = false;
     char c;
-    while (is_ok != true && run) {
+    while (is_ok != true && m.run) {
         printf("Entrez z (haut), q (gauche), s (bas) ou d (droite) : ");
         if (scanf(" %c", &input) != 1) {
-            if (!run) return 0;
+            if (!m.run) return 0;
             continue;
         }
         
@@ -54,6 +55,9 @@ directions ask_user_dir(void) {
     }
 }
 
+void end_game(int sig) {
+    m.run = false;
+}
 
 int main() {
     sigset_t set;
@@ -62,14 +66,17 @@ int main() {
     sigaddset(&set, SIGRTMIN + 9);
     sigprocmask(SIG_BLOCK, &set, NULL);
 
+    struct sigaction sa;
+    sa.sa_handler = end_game;
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
 
-    msg m;
     m.pid = getpid();
-    m.tty = ttyname(STDIN_FILENO);
+    strncpy(m.tty, ttyname(STDIN_FILENO), sizeof(m.tty) - 1);
     m.new_game = true;
     m.dir = -1;
 
-    int o = open("main_to_main", O_WRONLY);
+    o = open("main_to_main", O_WRONLY);
     if (o == -1) {
         perror("open main_to_main");
         exit(EXIT_FAILURE);
@@ -77,15 +84,15 @@ int main() {
 
     ssize_t bytes_written = write(o, &m, sizeof(msg));
     if (bytes_written == -1) {
-        perror("write pid to main_to_main");
+        perror("write msg to main_to_main");
         exit(EXIT_FAILURE);
     }
 
-    run = true;
+    m.run = true;
 
     int signum;
 
-    while (run) {
+    while (m.run) {
         sigwait(&set, &signum);
         if (signum == SIGRTMIN) {
             m.new_game = false;
@@ -93,14 +100,15 @@ int main() {
             if (m.dir != WRONG) {
                 ssize_t bytes_written = write(o, &m, sizeof(msg));
                 if (bytes_written == -1) {
-                    perror("write move to main_to_main");
+                    perror("write msg to main_to_main");
                     exit(EXIT_FAILURE);
                 }
             }
         } else if (signum == SIGRTMIN + 9) {
-            run = false;
+            m.run = false;
         }
     }
     
+    close(o);
     exit(EXIT_SUCCESS);
 }
