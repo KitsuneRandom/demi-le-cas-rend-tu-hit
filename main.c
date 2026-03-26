@@ -1,11 +1,7 @@
 #define _POSIX_C_SOURCE 200112L
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -16,6 +12,7 @@
 
 int o = -1;
 msg m;
+sem_t* sem;
 
 char ask_user_input(void) {
     char input;
@@ -57,6 +54,7 @@ directions ask_user_dir(void) {
 
 void end_game(int sig) {
     m.run = false;
+    kill(getpid(), SIGRTMIN + 9);
 }
 
 int main() {
@@ -81,6 +79,9 @@ int main() {
         perror("open main_to_main");
         exit(EXIT_FAILURE);
     }
+    
+    sem = sem_open("/sem2048", 0);
+    sem_wait(sem);
 
     ssize_t bytes_written = write(o, &m, sizeof(msg));
     if (bytes_written == -1) {
@@ -89,22 +90,23 @@ int main() {
     }
 
     m.run = true;
+    m.new_game = false;
 
     int signum;
 
     while (m.run) {
         sigwait(&set, &signum);
-        if (signum == SIGRTMIN) {
-            m.new_game = false;
+        if (signum != SIGRTMIN + 9) {
             m.dir = ask_user_dir();
             if (m.dir != WRONG) {
+                sem_wait(sem);
                 ssize_t bytes_written = write(o, &m, sizeof(msg));
                 if (bytes_written == -1) {
                     perror("write msg to main_to_main");
                     exit(EXIT_FAILURE);
                 }
             }
-        } else if (signum == SIGRTMIN + 9) {
+        } else {
             m.run = false;
         }
     }

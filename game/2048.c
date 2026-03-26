@@ -1,11 +1,13 @@
 #include "2048.h"
 #include "../display/display.h"
-#include "game_feature.h"
-#include <signal.h>
+#include <sys/wait.h>
 
-game games[MAX_GAMES];
+int shmid;
+game* games;
 size_t game_count = 0;
 size_t current_id;
+
+sem_t* sem;
 
 pid_t self_pid;
 pid_t display_pid;
@@ -26,16 +28,20 @@ size_t find_game(pid_t pid) {
 }
 
 void end_game_engine(int sig) {
+    for (size_t i = 0; i < game_count; i++) {
+        kill(games[i].main_pid, SIGINT);
+
+        int attempts = 10;
+        while (kill(games[i].main_pid, 0) == 0 && attempts-- > 0) {
+            usleep(50000); 
+        }
+    }
+    
     run = false;
     pthread_kill(move_score, SIGRTMIN + 9);
     pthread_kill(goal, SIGRTMIN + 9);
     pthread_kill(main_thread, SIGRTMIN + 9);
     kill(display_pid, SIGRTMIN + 9);
-    remove("main_to_main");
-
-    for (size_t i = 0; i < game_count; i++) {
-        kill(games[i].main_pid, SIGINT);
-    }
 }
 
 void* thread_move_score(void* arg) {
@@ -143,6 +149,7 @@ void* thread_goal(void* arg) {
                     dprintf(fd_console, "Le moteur de jeu est MORT !\n");
                     run = false;
                 }
+                close(fd_console);
             }
             kill(self_pid, SIGRTMIN + 5);
         }
@@ -155,8 +162,30 @@ void* thread_goal(void* arg) {
 
 
 void* thread_main(void* arg) {
+    char* file_name = "/bin/ls";
+    int proj_id = 99;
+    key_t my_cle = ftok(file_name, proj_id);
+
+    shmid = shmget(my_cle, sizeof(game) * MAX_GAMES, IPC_CREAT | SHM_W | SHM_R);
+    if (shmid == -1) {
+        end_game_engine(0);
+        perror("shmget");
+        exit(EXIT_FAILURE);
+    }
+
+    games = (game*)shmat(shmid, NULL, 0);
+
+    sem = sem_open("/sem2048", O_CREAT, 0644, 1);
+
+    if (mkfifo("main_to_main", 0666) == -1) {
+        end_game_engine(0);
+        perror("mkfifo main_to_main");
+        exit(EXIT_FAILURE);
+    }
+
     pthread_create(&move_score, NULL, thread_move_score, NULL);
     pthread_create(&goal, NULL, thread_goal, NULL);
+
 
     int o = open("main_to_main", O_RDONLY | O_NONBLOCK);
     if (o == -1) {
@@ -205,11 +234,11 @@ void* thread_main(void* arg) {
 
             if (msg_received.new_game) {
                 if (game_count < MAX_GAMES) {
-                    games[game_count].main_pid = msg_received.pid;
-                    strncpy(games[game_count].tty, msg_received.tty, sizeof(msg_received.tty) - 1);
-                    games[game_count].grid = (grid){0};
-                    games[game_count].run = true;
-                    game_count++;
+                    current_id = game_count++;
+                    games[current_id].main_pid = msg_received.pid;
+                    strncpy(games[current_id].tty, msg_received.tty, sizeof(msg_received.tty) - 1);
+                    games[current_id].grid = (grid){0};
+                    games[current_id].run = true;
                     pthread_kill(move_score, SIGRTMIN);
                 }
             } else {
@@ -248,16 +277,23 @@ void* thread_main(void* arg) {
             if (signum != SIGRTMIN + 9) {
                 kill(display_pid, SIGRTMIN);
                 sigwait(&set, &signum);
+                sem_post(sem);
                 kill(games[current_id].main_pid, SIGRTMIN);
-                current_id = -1;
             }
         }
     }
 
     close(o);
+    remove("main_to_main");
 
     pthread_join(move_score, NULL);
     pthread_join(goal, NULL);
+
+    shmdt(games);
+    shmctl(shmid, IPC_RMID, NULL);
+    sem_close(sem);
+    sem_unlink("/sem2048");
+
 
     pthread_exit(NULL);
 }
@@ -277,13 +313,6 @@ int main() {
     sa.sa_handler = end_game_engine;
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
-
-    int main_to_main = mkfifo("main_to_main", 0666);
-        if (main_to_main == -1) {
-            end_game_engine(0);
-            perror("mkfifo main_to_main");
-            exit(EXIT_FAILURE);
-        }
 
     self_pid = getpid();
 

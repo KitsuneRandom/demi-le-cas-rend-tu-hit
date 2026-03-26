@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#include <semaphore.h>
 
 // Grille : tableau de 16 entiers
 //  - 0 si case vide
