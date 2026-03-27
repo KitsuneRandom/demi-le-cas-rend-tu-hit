@@ -313,6 +313,7 @@ int main() {
     sa.sa_handler = end_game_engine;
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
 
     self_pid = getpid();
 

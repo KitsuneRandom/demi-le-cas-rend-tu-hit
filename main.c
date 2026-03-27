@@ -68,6 +68,7 @@ int main() {
     sa.sa_handler = end_game;
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
 
     m.pid = getpid();
     strncpy(m.tty, ttyname(STDIN_FILENO), sizeof(m.tty) - 1);

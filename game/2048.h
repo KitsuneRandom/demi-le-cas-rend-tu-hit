@@ -14,7 +14,7 @@
 #include <sys/shm.h>
 #include "game_feature.h"
 
-#define MAX_GAMES 32   // nombre maximum de parties simultanées
+#define MAX_GAMES 128   // nombre maximum de parties simultanées
 
 typedef struct game {
     pid_t main_pid;
