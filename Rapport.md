@@ -1,41 +1,39 @@
-# Rapport - demi le cas rend tu Hit
-Mathis DE AZEVEDO - Abel GOMES - Lucie TRIPIER
-<br>
+# Rapport SAE 4.3 - Back to 2048
+Abel GOMES - Mathis DE AZEVEDO - Lucie TRIPIER
 
+## difficultés 
 
-<br> 
+| Difficulté | Conséquence | 
+| -------------|------------- |
+| Refonte de la version originale : De base, on lance un main qui lance le processus 2048. On devait avoir un seul processus 2048, donc on a du séparer complètement les 2 processus. | Perte de temps : le temps de s’en rendre compte + le temps de le corriger. |
+| Difficultés d’organisation (on est répartis dans les 3 TDs donc pas fou pour se voir + on a énormément de trucs à rendre en 2 semaines). | Répartition des tâches très inégale et perte de temps lorsqu’un membre du groupe était bloqué et devait attendre les autres. |
+| En séparant le processus 2048 et le processus main, on se retrouve avec 2048 qui attend en lecteur de pipe sans écrivain. | Pas de conséquence notable, on a trouvé une solution alternative : la mise en place d’un poll. |
 
-## Difficultés rencontrées 
-<br>
-Fonctions de jeu :<br>
-- Gestion des index de la grille (grille 1D)<br>
-- Découpage des fonctions pour concorder avec les besoins des différents threads (score, affichage, déplacements, ...) -> pas tout gérer en 1 fonction<br>
-- ne pas se taper dessus quand on codait, car vu qu'on ne devait pas faire les mêmes trucs chacun de son côté, il fallait qu'on se coordonne pour ne pas faire les mêmes choses en même temps et bien préciser qui faisait quoi (sinan les git merge on aurait pleuré). <br>
-- abscence d'un coéquipier a la fin (Lucie, problèmes perso) 
-- découverte d'un bug après qu'on avait tout fini et rendu en avance
-<br>
+## répartition des tâches
+Abel : étape 1, étape 2, étape 3, tests
 
-## Répartition des tâches
-<br>
-Abel GOMES : Communication entre les processus, déroulement de la partie<br>
-Lucie TRIPIER : Fonctions de jeu, affichage en couleurs, README + rapport<br>
-Mathis DE AZEVEDO : Fonctions de jeu, affichage de base, interactions avec l'utilisateur, README + rapport<br>
+Mathis : tentatives désastreuses sur l’étape 1, documentation, tests
 
+Lucie : rapport, préparation de la soutenance
 
+## Temps de travail
+Abel : 8h
 
-## "Fonctionnalités qui marchent"
-<br>
-Fonctions de jeu :<br>
-- Ajouter une nouvelle case à un emplacement aléatoire<br>
-- Déplacer + fusionner les cases dans une direction<br>
-- Vérifier la fin du jeu (gagné/perdu)<br>
-<br>
-Affichage :<br>
-- Afficher l'entièreté de la grille avec une jolie interface<br>
-- Afficher chaque nombre avec une couleur prédéterminée<br>
-<br>
+Mathis : 5h inutiles, 2h utiles
 
-## "Fonctionnalités qui marchent pas"
-<br>
-En Bonus on aurait pu faire une commande pour rejouer quand on a gagné ou perdu (j'ai perdu). <br>
-mettre un rickroll en ASCII quand on perd ? 
+Lucie : 1h
+
+## les fonctionnalités qui marchent et celles qui ne marchent pas
+### Ce qui marche : 
+
+| étape | description |
+|----|----|
+| Etape 1 | 1 processus 2048, plusieurs processus main, 1 pipe nommé, 1 processus d’affichage. |
+| Etape 2 |  Un sémaphore protège l’accès au segment de mémoire partagée (et au pipe au passage).|
+| Etape 3 | Un segment de mémoire partagée stocke les données de toutes les parties . |
+
+### Ce qui ne marche pas : 
+
+| étape | description |
+|----|----|
+| Etape 2 |  Un segment de mémoire partagée qui stocke les données d’une seule partie : on est passé directement à l’étape 3 par manque de temps, et parce que c’est la solution qui paraissait la plus simple et logique.|

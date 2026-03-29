@@ -9,18 +9,18 @@ int number_of_char(const uint16_t i);
 
 // Affiche le séparateur entre 2 nombres
 // Paramètres : new_line = true si retour à la ligne
-void print_separator(bool new_line);
+void print_separator(bool new_line, int fd);
 
 // Fonctions permettant d'afficher les lignes entre les cases
-void print_first_line();
-void print_middle_line();
-void print_last_line();
+void print_first_line(int fd);
+void print_middle_line(int fd);
+void print_last_line(int fd);
 
 // Affiche le nombre de la bonne couleur
-void print_number(const uint16_t n);
+void print_number(const uint16_t n, int fd);
 
 // Affiche la grille de jeu à l'aide des fonctions précédentes
-void print_grid(const uint16_t *grid);
+void print_grid(const uint16_t *grid, int fd);
 
 /*
 Dimensions :

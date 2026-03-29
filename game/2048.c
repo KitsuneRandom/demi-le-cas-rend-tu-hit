@@ -1,11 +1,16 @@
-#define _POSIX_C_SOURCE 200112L
 #include "2048.h"
 #include "../display/display.h"
+#include <sys/wait.h>
 
-grid g;
+int shmid;
+game* games;                                    // Tableau de parties
+size_t game_count = 0;                          // Compteur de parties
+size_t current_id;                              // ID de la partie en cours
+
+sem_t* sem;
+
 pid_t self_pid;
 pid_t display_pid;
-pid_t main_pid;
 
 pthread_t move_score;
 pthread_t goal;
@@ -13,19 +18,39 @@ pthread_t main_thread;
 
 bool run = false;
 
-void end_game() {
+// Fonction pour retrouver la partie associée à un main avec son PID
+size_t find_game(pid_t pid) {
+    for (size_t i = 0; i < game_count; i++) {
+        if (games[i].main_pid == pid)
+            return i;
+    }
+    return -1;
+}
+
+// Fonction pour terminer proprement le moteur de jeu et toutes les parties
+void end_game_engine(int sig) {
+    for (size_t i = 0; i < game_count; i++) {
+        kill(games[i].main_pid, SIGINT);
+
+        int attempts = 10;
+        while (kill(games[i].main_pid, 0) == 0 && attempts-- > 0) {
+            usleep(50000); 
+        }
+    }
+    
     run = false;
-    kill(main_pid, SIGRTMIN + 9);
     pthread_kill(move_score, SIGRTMIN + 9);
     pthread_kill(goal, SIGRTMIN + 9);
     pthread_kill(main_thread, SIGRTMIN + 9);
+    kill(display_pid, SIGRTMIN + 9);
 }
 
 void* thread_move_score(void* arg) {
+    // Attend un signal puis effectue le mouvement correspondant et ajoure une nouvelle cellule
     sigset_t set;
     sigemptyset(&set);
 
-    for (int i = SIGRTMIN + 1; i <= SIGRTMIN + 4; i++) sigaddset(&set, i);
+    for (int i = SIGRTMIN; i <= SIGRTMIN + 4; i++) sigaddset(&set, i);
     sigaddset(&set, SIGRTMIN + 9);
 
     int signum;
@@ -35,15 +60,15 @@ void* thread_move_score(void* arg) {
 
         if (signum != SIGRTMIN + 9) {
             if (signum == SIGRTMIN + 1) {
-                move_all(&g, Up);
+                move_all(&games[current_id].grid, Up);
             } else if (signum == SIGRTMIN + 2) {
-                move_all(&g, Left);
+                move_all(&games[current_id].grid, Left);
             } else if (signum == SIGRTMIN + 3) {
-                move_all(&g, Down);
+                move_all(&games[current_id].grid, Down);
             } else if (signum == SIGRTMIN + 4) {
-                move_all(&g, Right);
+                move_all(&games[current_id].grid, Right);
             }
-            add_random_cell(&g);
+            if (games[current_id].run) add_random_cell(&games[current_id].grid);
 
             pthread_kill(goal, SIGRTMIN);
         }
@@ -53,6 +78,7 @@ void* thread_move_score(void* arg) {
 }
 
 void* thread_goal(void* arg) {
+    // Création d'un pipe anonyme (entre le thread goal et le thread d'affichage)
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         perror("pipe");
@@ -62,9 +88,8 @@ void* thread_goal(void* arg) {
     display_pid = fork();
 
     if (display_pid) {
-        // parent
+        // parent - goal
         close(pipefd[0]);
-        write(pipefd[1], &g, sizeof(grid));
 
         sigset_t set;
         sigemptyset(&set);
@@ -73,57 +98,72 @@ void* thread_goal(void* arg) {
 
         int signum;
 
-        game_state state;
+        display_msg dmsg;
 
         while (run) {
             sigwait(&set, &signum);
 
-            state = check_game_state(&g);
+            // Préparation du message d'affichage
+            dmsg.state = check_game_state(&games[current_id].grid);
+            dmsg.grid = games[current_id].grid;
+            strncpy(dmsg.tty, games[current_id].tty, sizeof(dmsg.tty) - 1);
 
-            write(pipefd[1], &g, sizeof(grid));
-            if (signum == SIGRTMIN + 9) state = LOSE;
-            write(pipefd[1], &state, sizeof(game_state));
+            if (!games[current_id].run) dmsg.state = LOSE;
+            if (signum == SIGRTMIN + 9) dmsg.state = DEAD;
+
+            // Ecriture du message dans un pipe anonyme
+            write(pipefd[1], &dmsg, sizeof(display_msg));
             pthread_kill(main_thread, SIGRTMIN);
-
-            if (state != ONGOING) end_game();
+            if (dmsg.state != ONGOING) {
+                kill(games[current_id].main_pid, SIGRTMIN + 9);
+            }
         }
+        // Fermeture du pipe et attente de la fin du processus d'affichage
         close(pipefd[1]);
         wait(NULL);
     }
     else {
-        // child
+        // child - affichage
         close(pipefd[1]);
-
-        grid received_grid;
-        game_state state;
-
-        read(pipefd[0], &received_grid, sizeof(grid));
-        printf("Score : %d\n\n", received_grid.score);
-        print_grid(received_grid.cells);
-        kill(self_pid, SIGRTMIN + 5);
 
         sigset_t set;
         sigemptyset(&set);
         sigaddset(&set, SIGRTMIN);
-
+        sigaddset(&set, SIGRTMIN + 9);
+        
         int signum;
+        display_msg dmsg;
+        int fd_console;
 
         while (run) {
             sigwait(&set, &signum);
 
-            read(pipefd[0], &received_grid, sizeof(grid));
-            read(pipefd[0], &state, sizeof(game_state));
+            if (signum != SIGRTMIN + 9) {
 
-            system("clear");
-            printf("Score : %d\n\n", received_grid.score);
-            print_grid(received_grid.cells);
-            
-            if (state == WIN) printf("Félicitations ! Vous avez gagné !\n");
-            else if (state == LOSE) printf("Dommage ! Vous avez perdu !\n");
-            
-            if (state != ONGOING) end_game(); // child and parent don't share run variable
-            else kill(self_pid, SIGRTMIN + 5);
+                // Lecture du message d'affichage depuis le pipe anonyme
+                read(pipefd[0], &dmsg, sizeof(display_msg));
+
+                // Ouverture du fichier du terminal du main
+                fd_console = open(dmsg.tty, O_WRONLY);
+
+                // Affichage des infos
+                dprintf(fd_console, "\033[H\033[J");
+                dprintf(fd_console, "Score : %d\n\n", dmsg.grid.score);
+
+                print_grid(dmsg.grid.cells, fd_console);
+                
+                if (dmsg.state == WIN) dprintf(fd_console, "Félicitations ! Vous avez gagné !\n");
+                else if (dmsg.state == LOSE) dprintf(fd_console, "Dommage ! Vous avez perdu !\n");
+                else if (dmsg.state == DEAD) {
+                    dprintf(fd_console, "Le moteur de jeu est MORT !\n");
+                    run = false;
+                }
+                close(fd_console);
+            }
+            // Indique à tous les threads qu'il a fini
+            kill(self_pid, SIGRTMIN + 5);
         }
+        // Fermeture du pipe
         close(pipefd[0]);
         exit(EXIT_SUCCESS);
     }
@@ -131,76 +171,149 @@ void* thread_goal(void* arg) {
     pthread_exit(NULL);
 }
 
+
 void* thread_main(void* arg) {
+    // Création du segment de mémoire partagée
+    char* file_name = "/bin/ls";
+    int proj_id = 99;
+    key_t my_cle = ftok(file_name, proj_id);
+
+    shmid = shmget(my_cle, sizeof(game) * MAX_GAMES, IPC_CREAT | SHM_W | SHM_R);
+    if (shmid == -1) {
+        end_game_engine(0);
+        perror("shmget");
+        exit(EXIT_FAILURE);
+    }
+
+    games = (game*)shmat(shmid, NULL, 0);           // Attachement du segment de mémoire partagée
+
+    sem = sem_open("/sem2048", O_CREAT, 0644, 1);
+
+    // Création du pipe
+    if (mkfifo("main_to_main", 0666) == -1) {
+        end_game_engine(0);
+        perror("mkfifo main_to_main");
+        exit(EXIT_FAILURE);
+    }
+
+    // On lance les autres threads
     pthread_create(&move_score, NULL, thread_move_score, NULL);
     pthread_create(&goal, NULL, thread_goal, NULL);
 
-    int o = open("main_to_main", O_RDONLY);
+
+    int o = open("main_to_main", O_RDONLY | O_NONBLOCK);
     if (o == -1) {
-        end_game();
+        end_game_engine(0);
         perror("open main_to_main");
         exit(EXIT_FAILURE);
     }
-    ssize_t bytes_read = read(o, &main_pid, sizeof(main_pid));
-    if (bytes_read == -1) {
-        end_game();
-        perror("read pid from main_to_main");
-        exit(EXIT_FAILURE);
-    }
+
+    run = true;
 
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGRTMIN);
     sigaddset(&set, SIGRTMIN + 5);
     sigaddset(&set, SIGRTMIN + 9);
-    
-    int signum;
-    
-    directions direction;
 
-    sigwait(&set, &signum);
+    int signum;
+    msg msg_received;
+
+    ssize_t bytes_read;
+
+    // Utilisation de poll pour attendre les messages sans bloquer le thread
+    struct pollfd pfd;
+    pfd.fd = o;
+    pfd.events = POLLIN;
 
     while (run) {
         if (signum != SIGRTMIN + 9) {
-            kill(main_pid, SIGRTMIN);
-            if (read(o, &direction, sizeof(direction)) == -1) {
-                end_game();
-                perror("read direction from main_to_main");
+            int ret = poll(&pfd, 1, 100);
+
+            if (ret == -1) {
+                end_game_engine(0);
+                perror("poll");
+                exit(EXIT_FAILURE);
+            } else if (ret == 0) {
+                continue;
+            }
+            
+            // Lecture du message provenant d'un main
+            bytes_read = read(o, &msg_received, sizeof(msg));
+            if (bytes_read == -1) {
+                end_game_engine(0);
+                perror("read from main_to_main");
                 exit(EXIT_FAILURE);
             }
-            switch (direction) {
-                case Up :
-                    // Move Up
-                    pthread_kill(move_score, SIGRTMIN + 1);
-                    break;
-                case Left :
-                    // Move Left
-                    pthread_kill(move_score, SIGRTMIN + 2);
-                    break;
-                case Down :
-                    // Move Down
-                    pthread_kill(move_score, SIGRTMIN + 3);
-                    break;
-                case Right :
-                    // Move Right
-                    pthread_kill(move_score, SIGRTMIN + 4);
-                    break;
-                default :
-                    end_game();
-                    break;
+
+            if (bytes_read == 0) continue;
+
+            if (msg_received.new_game) {                                // Création d'une nouvelle partie
+                if (game_count < MAX_GAMES) {
+                    current_id = game_count++;
+                    games[current_id].main_pid = msg_received.pid;
+                    strncpy(games[current_id].tty, msg_received.tty, sizeof(msg_received.tty) - 1);
+                    games[current_id].grid = (grid){0};
+                    games[current_id].run = true;
+                    pthread_kill(move_score, SIGRTMIN);
+                }
+            } else {                                                    // Mouvement dans une partie existante
+                current_id = find_game(msg_received.pid);
+                if (current_id != (size_t)-1 && msg_received.run == true) {     // Si elle tourne encore, on traite le mouvement
+                    switch (msg_received.dir) {
+                    case Up :
+                        // Move Up
+                        pthread_kill(move_score, SIGRTMIN + 1);
+                        break;
+                    case Left :
+                        // Move Left
+                        pthread_kill(move_score, SIGRTMIN + 2);
+                        break;
+                    case Down :
+                        // Move Down
+                        pthread_kill(move_score, SIGRTMIN + 3);
+                        break;
+                    case Right :
+                        // Move Right
+                        pthread_kill(move_score, SIGRTMIN + 4);
+                        break;
+                    case WRONG :
+                        break;
+                    }
+                }
+                else if (msg_received.run == false) {                           // Sinon on termine la partie
+                    games[current_id].run = false;
+                    pthread_kill(move_score, SIGRTMIN);
+                }
+                else {                                                          // Si la partie n'existe pas, jaaj
+                    pthread_kill(move_score, SIGRTMIN);
+                }
             }
             sigwait(&set, &signum);
             if (signum != SIGRTMIN + 9) {
-                kill(display_pid, SIGRTMIN);
-                sigwait(&set, &signum);
+                kill(display_pid, SIGRTMIN);                                    // On demande l'affichage
+                sigwait(&set, &signum);                                         // On attend que ça soit fait
+                kill(games[current_id].main_pid, SIGRTMIN);                     // On prévient le main que l'affichage est terminé
+                sem_post(sem);                                                  // On lâche le sémaphore maintenant que le pipe et le current_id sont libres
             }
         }
     }
-    
+
+    // Supression du pipe
+    close(o);
+    remove("main_to_main");
+
+    // Attente de la fin des threads
     pthread_join(move_score, NULL);
     pthread_join(goal, NULL);
 
-    close(o);
+    // Détachement et suppression de la mémoire partagée et du sémaphore
+    shmdt(games);
+    shmctl(shmid, IPC_RMID, NULL);
+    sem_close(sem);
+    sem_unlink("/sem2048");
+
+
     pthread_exit(NULL);
 }
 
@@ -215,13 +328,17 @@ int main() {
     sigaddset(&mask, SIGRTMIN + 9);
     sigprocmask(SIG_BLOCK, &mask, NULL);
 
-    g = (grid){0};
-    add_random_cell(&g);
+    // Handler pour terminer proprement
+    struct sigaction sa;
+    sa.sa_handler = end_game_engine;
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
 
     self_pid = getpid();
 
-    pthread_create(&main_thread, NULL, thread_main, NULL);
-    pthread_join(main_thread, NULL);
+    pthread_create(&main_thread, NULL, thread_main, NULL);          // On lance le thread principal
+    pthread_join(main_thread, NULL);                                // On l'attend
 
     exit(EXIT_SUCCESS);
 }
