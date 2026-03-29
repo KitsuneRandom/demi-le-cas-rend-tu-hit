@@ -26,12 +26,13 @@ typedef enum directions {
     Up = 0, Right, Down, Left, WRONG
 } directions;
 
+// Message envoyé par le main pour la création de la partie ou les directions
 typedef struct msg {
-    pid_t pid;
-    char tty[128];
-    bool new_game;
-    bool run;
-    directions dir;
+    pid_t pid;              // PID du main
+    char tty[128];          // Nom du terminal du main
+    bool new_game;          // indique si c'est une nouvelle partie ou un déplacement
+    bool run;               // indique si la partie est en cours ou s'arrête
+    directions dir;         // direction du déplacement (si new_game == false)
 } msg;
 
 typedef enum game_state {
@@ -41,10 +42,11 @@ typedef enum game_state {
     DEAD
 } game_state;
 
+// Message envoyé par le jeu pour l'affichage
 typedef struct display_msg {
-    grid grid;
-    game_state state;
-    char tty[128];
+    grid grid;                  // grille de jeu
+    game_state state;           // état de la partie
+    char tty[128];              // terminal où afficher
 } display_msg;
 
 

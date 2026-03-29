@@ -52,6 +52,7 @@ directions ask_user_dir(void) {
     }
 }
 
+// Fonction permettant de terminer la partie en cours
 void end_game(int sig) {
     m.run = false;
     kill(getpid(), SIGRTMIN + 9);
@@ -64,14 +65,16 @@ int main() {
     sigaddset(&set, SIGRTMIN + 9);
     sigprocmask(SIG_BLOCK, &set, NULL);
 
+    // Handler pour terminer proprement
     struct sigaction sa;
     sa.sa_handler = end_game;
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
 
+    // Définition d'un message de création de partie
     m.pid = getpid();
-    strncpy(m.tty, ttyname(STDIN_FILENO), sizeof(m.tty) - 1);
+    strncpy(m.tty, ttyname(STDIN_FILENO), sizeof(m.tty) - 1);       // ttyname(STDIN_FILENO) retourne le nom du terminal associé à l'entrée standard
     m.new_game = true;
     m.dir = -1;
 
@@ -82,7 +85,7 @@ int main() {
     }
     
     sem = sem_open("/sem2048", 0);
-    sem_wait(sem);
+    sem_wait(sem);                                                  // Sécurisation de l'écriture dans le pipe partagé entre les mains
 
     ssize_t bytes_written = write(o, &m, sizeof(msg));
     if (bytes_written == -1) {
@@ -95,12 +98,13 @@ int main() {
 
     int signum;
 
+    // Boucle de jeu
     while (m.run) {
-        sigwait(&set, &signum);
+        sigwait(&set, &signum);                                     // Attente des threads de jeu
         if (signum != SIGRTMIN + 9) {
             m.dir = ask_user_dir();
             if (m.dir != WRONG) {
-                sem_wait(sem);
+                sem_wait(sem);                                      // Sécurisation de l'écriture dans le pipe partagé entre les mains
                 ssize_t bytes_written = write(o, &m, sizeof(msg));
                 if (bytes_written == -1) {
                     perror("write msg to main_to_main");

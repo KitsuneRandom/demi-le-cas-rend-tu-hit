@@ -16,11 +16,12 @@
 
 #define MAX_GAMES 128   // nombre maximum de parties simultanées
 
+// Structure qui stocke les informations d'une partie
 typedef struct game {
-    pid_t main_pid;
-    char tty[128];
-    grid grid;
-    bool run;
+    pid_t main_pid;         // PID du main qui gère la partie
+    char tty[128];          // nom du terminal associé au main
+    grid grid;              // grille de jeu
+    bool run;               // indique si la partie est en cours ou terminée
 } game;
 
 void* thread_move_score(void* arg);
