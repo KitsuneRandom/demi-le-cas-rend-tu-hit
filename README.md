@@ -8,7 +8,7 @@ Jeu 2048 jouable sur terminal. bougez les tuiles avec zqsd jusqu'à atteindre la
 ![Le jeu](image.webp)<br>
 Le but de ce projet est de recréer le célèbre jeu 2048 dans le langage C en utilisant des processus différents communiquant entre eux pour réaliser les différentes fonction de jeu.
 <br>
-Une version améliorer permettant de jouer plusieurs parties à la fois est disponible sur la branche [zero](https://git.unistra.fr/m.deazevedo/demi-le-cas-rend-tu-hit/-/tree/zero)
+Une version améliorée permettant de jouer plusieurs parties à la fois est disponible sur la branche [zero](https://git.unistra.fr/m.deazevedo/demi-le-cas-rend-tu-hit/-/tree/zero)
 
 ## installation et lancement
 ```bash
