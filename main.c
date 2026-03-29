@@ -9,8 +9,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
-#include "display.h"
 #include "game/game_feature.h"
 
 bool run = false;
