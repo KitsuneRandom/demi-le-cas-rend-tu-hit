@@ -1,14 +1,14 @@
-# demi le cas rend tu Hit
+# demi le cas rend tu Hit - version Zero
 
 ## Description
 Jeu 2048 jouable sur terminal. bougez les tuiles avec zqsd jusqu'à atteindre la tuile 2048. a la fin du jeu (plus de place ou tuile 2048 crée), le jeu affichera votre score, calculé en fonction des tuiles que vous avez assemblées.
 <br>
+Dans cette version, on peut jouer plusieurs parties en même temps depuis plusieurs terminaux.
 
 ## Jeu
 ![Le jeu](image.webp)<br>
 Le but de ce projet est de recréer le célèbre jeu 2048 dans le langage C en utilisant des processus différents communiquant entre eux pour réaliser les différentes fonction de jeu.
 <br>
-Une version améliorée permettant de jouer plusieurs parties à la fois est disponible sur la branche [zero](https://git.unistra.fr/m.deazevedo/demi-le-cas-rend-tu-hit/-/tree/zero)
 
 ## installation et lancement
 ```bash
@@ -20,14 +20,18 @@ $ make fclean
 
 $ make
 
-$ cd bin/
+$ cd bin/game
 
-$ ./demi_le_cas 
+$ ./2048
+
+$ cd ..
+
+$ ./demi_le_cas             // répéter cette commande pour chaque partie à lancer
 ```
 <br>
 
 ## Contributions
-Abel GOMES : Communication entre les processus, déroulement de la partie
+Abel GOMES : Communication entre les processus, déroulement des partie
 
 Lucie TRIPIER : Fonctions de jeu, affichage en couleurs, README + rapport
 
